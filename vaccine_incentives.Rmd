@@ -1,0 +1,416 @@
+---
+title: "MidtermReport"
+author: "Lee Che Yuet Isaac"
+date: "3/31/2023"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+# Progress so far
+
+Preparation for the datasets are almost done, then can be moved on to the matching phase. There is a minor problem regarding including states as a covariate for matching, which is still considering for a solution.
+
+
+
+
+# Initialization
+
+```{r, results = 'hide', message = FALSE}
+rm(list=ls())
+gc()
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# required packages
+packages <- c('readr','dplyr', 'AER','stargazer','haven','cem','Matching','MatchIt','cobalt')
+
+# install any packages that are not yet installed
+installed_packages <- packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+
+# load required packages
+invisible(lapply(packages, library, character.only = TRUE))
+```
+
+# Vaccine incentives
+## Loading the dataset as tibble
+```{r Loading the dataset as tibble,message=FALSE, warning=FALSE, paged.print=TRUE}
+# load dataset
+vaccine_incentives <- read_delim("analysis_ready.csv",
+delim = ";", escape_double = FALSE, trim_ws = TRUE) %>% # need to change the folder path
+  as_tibble()
+
+#glimpse
+head(vaccine_incentives)
+```
+
+
+```{r Counting experimental groups by treatment}
+count(vaccine_incentives, Treatment)
+```
+```{r Counting experimental groups by names}
+count(vaccine_incentives, Treatment2)
+```
+Control: treatment1(CDC Health Information)  
+Treatment version 1: treatment2(Lottery Incentive)  
+Treatment version 2: treatment3(Cash Voucher Incentive)  
+
+## Data cleaning
+```{r Data cleaning, message=FALSE, warning=FALSE, paged.print=TRUE}
+vi_cleaned <- vaccine_incentives %>%
+  mutate(
+    Treatment_012 = case_when(Treatment == 'treatment1' ~ 0,
+                             Treatment == 'treatment2' ~ 1,
+                             Treatment == 'treatment3' ~ 2),
+    Female_10 = case_when(gender == 'Female' ~ 1,
+                     gender == 'Male' ~ 0,
+                     gender == 'Other' ~ NA_real_),
+    age_young_10 = if_else(Age_cat == 'Young', 1, 0),
+    race_white_10 = if_else(Race == 'White' , 1, 0),
+    race_black_10 = if_else(Race == 'Black' , 1, 0),
+    race_other_10 = if_else(Race == 'Other' , 1, 0),
+    education_low_10 = if_else(Education == 'Low' , 1, 0),
+    education_medium_10 = if_else(Education == 'Medium' , 1, 0),
+    education_high_10 = if_else(Education == 'High' , 1,0),
+    pool_CloudResearch_10 = if_else(pool == 'CloudResearch' , 1, 0),
+    pool_Facebook_10 = if_else(pool == 'Facebook' , 1, 0),
+    pool_Lucid_10 = if_else(pool == 'Lucid' , 1, 0),
+    outcome = if_else(clicked == 1, 1, 0),
+    treated = if_else(Treatment_012 > 0, 1, 0)) %>%
+  dplyr::select(Treatment_012,
+                Female_10,
+                age_young_10,
+                race_white_10,
+                race_black_10,
+                race_other_10,
+                education_low_10,
+                education_medium_10,
+                education_high_10,
+                pool_CloudResearch_10,
+                pool_Facebook_10,
+                pool_Lucid_10,
+                Trumppercent,
+                Trumphi,
+                age,
+                outcome,
+                treated)
+
+head(vi_cleaned)
+```
+## Summary statistics
+```{r Summary statistics}
+vi_cleaned %>%
+  mutate(
+    Treatment_012 = factor(Treatment_012),
+                Female_10 = factor(Female_10),
+                age_young_10 = factor(age_young_10),
+                race_white_10 = factor(race_white_10),
+                race_black_10 = factor(race_black_10),
+                race_other_10 = factor(race_other_10),
+                education_low_10 = factor(education_low_10),
+                education_medium_10 = factor(education_medium_10),
+                education_high_10 = factor(education_high_10),
+                pool_CloudResearch_10 = factor(pool_CloudResearch_10),
+                pool_Facebook_10 = factor(pool_Facebook_10),
+                pool_Lucid_10 = factor(pool_Lucid_10),
+                Trumppercent,
+                Trumphi = factor(Trumphi),
+                age,
+                outcome = factor(outcome),
+    treated = factor(treated)
+  ) %>%
+  summary() 
+```
+## Experimental benchmark
+Creating a basic and preliminary estimate of the treatment effect.
+```{r Experimental benchmark basic regression}
+model_vi_1 <- lm(outcome ~ treated, data = vi_cleaned)
+summary(model_vi_1)
+```
+Try adding other covariates into the regression and se
+```{r Experimental benchmark regression with control}
+model_vi_2 <- lm(outcome ~ treated + 
+                   Female_10 +
+                   age_young_10 +
+                   race_white_10 +
+                   race_black_10 +
+                   race_other_10 +
+                   education_low_10 +
+                   education_medium_10 +
+                   education_high_10 +
+                   pool_CloudResearch_10 +
+                   pool_Facebook_10 +
+                   pool_Lucid_10 +
+                   Trumppercent +
+                   Trumphi +
+                   age, data = vi_cleaned)
+summary(model_vi_2)
+```
+
+
+## Matching preparation
+```{r Matching preparation}
+tr <- which(vi_cleaned$treated == 1)
+ct <- which(vi_cleaned$treated == 0)
+ntr <- length(tr)
+ntr
+nct <- length(ct)
+nct
+```
+## Basic estimate
+```{r Basic estimate}
+mean(na.omit(vi_cleaned$outcome[tr])) - mean(na.omit(vi_cleaned$outcome[ct]))
+```
+## Covariate balance
+```{r Covariate balance, message=FALSE, warning=FALSE}
+covs1 <- vi_cleaned %>%
+  dplyr::select(Treatment_012,
+                Female_10,
+                age_young_10,
+                race_white_10,
+                race_black_10,
+                race_other_10,
+                education_low_10,
+                education_medium_10,
+                education_high_10,
+                pool_CloudResearch_10,
+                pool_Facebook_10,
+                pool_Lucid_10,
+                Trumppercent,
+                Trumphi,
+                age,
+                treated) %>%
+  na.omit()
+
+bal.tab(covs1, treat = covs1$treated)
+```
+
+
+
+# Email mobilization
+```{r include=FALSE}
+# load dataset: email_mobilization
+email_mobilization <- read_csv("subset_finalAnalysisFile20170711.csv") %>% # need to change the folder path
+  as_tibble()
+```
+
+Have a glimpse on the dataset.
+
+```{r}
+head(email_mobilization)
+```
+
+Look into the distribution of the experimental groups.
+
+    1.  `0`: Control
+    2.  `1`: Election Information
+    3.  `2`: Social Pressure
+    4.  `3`: Native Threat
+    5.  `4`: Latino Group Threat.
+```{r}
+count(email_mobilization, treat)
+```
+
+## Summary statistics of the whole dataset
+Some of the variables are binary indicators so they are converted into factors.
+```{r}
+email_mobilization %>%
+  # turn binary indicators into factors so that we can get more useful summaries
+  mutate(gender = factor(gender), 
+         race = factor(race),
+         party = factor(party), 
+         voterStatus = factor(voterStatus),
+         congressionalDistrict = factor(congressionalDistrict),
+         general16 = factor(general16),
+         outcome = factor(outcome),
+         historyCode2016 = factor(historyCode2016), 
+         recent = factor(recent),
+         likely = factor(likely),
+         general12 = factor(general12),
+         treat = factor(treat),
+         registered_prior = factor(registered_prior),
+         minority = factor(minority),
+         major_party = factor(major_party),
+         validEmail = factor(validEmail),
+         pastGeneral = factor(pastGeneral)
+         ) %>%
+  summary()
+```
+## Create the experiment subset
+Filtering out the observations that are not in the experimental groups.
+```{r} 
+em_experiment <- email_mobilization %>%
+  filter(treat != 'NA') %>%
+  as_tibble()
+
+  
+head(em_experiment)
+```
+Double checking the distribution of the experimental groups.
+```{r}
+count(em_experiment, treat)
+```
+## Summary statistics of the whole dataset
+Some of the variables are binary indicators so they are converted into factors.   
+```{r}
+em_experiment %>%
+  # turn binary indicators into factors so that we can get more useful summaries
+  mutate(gender = factor(gender), 
+         race = factor(race),
+         party = factor(party), 
+         voterStatus = factor(voterStatus),
+         congressionalDistrict = factor(congressionalDistrict),
+         general16 = factor(general16),
+         outcome = factor(outcome),
+         historyCode2016 = factor(historyCode2016), 
+         recent = factor(recent),
+         likely = factor(likely),
+         general12 = factor(general12),
+         treat = factor(treat),
+         registered_prior = factor(registered_prior),
+         minority = factor(minority),
+         major_party = factor(major_party),
+         validEmail = factor(validEmail),
+         pastGeneral = factor(pastGeneral)
+         ) %>%
+  summary()
+```
+## Experimental benchmark
+Creating a basic and preliminary estimate of the treatment effect.
+```{r}
+em_experiment <- em_experiment %>%
+  mutate(treated = case_when(treat == 0 ~ 0,
+                             treat > 0 ~ 1),
+         democrat = case_when(major_party == 1 ~ 1,
+                              major_party > 1 ~ 0),
+         female = if_else(gender == "F", 1,0),
+         non_white = if_else(minority == 1,1,0))
+         
+
+model_em_1 <- lm(outcome ~ treated, data = em_experiment)
+summary(model_em_1)
+```
+Try adding other covariates into the regression and se
+```{r}
+model_em_2 <- lm(outcome ~ treated + 
+                   gender +
+                   age +
+                   race +
+                   major_party +
+                   minority
+                   , data = em_experiment)
+summary(model_em_2)
+```
+## Coarsened Exact Matching
+```{r}
+tr <- which(em_experiment$treated == 1)
+ct <- which(em_experiment$treated == 0)
+ntr <- length(tr)
+ntr
+nct <- length(ct)
+nct
+```
+### Basic estimate
+```{r}
+mean(na.omit(em_experiment$outcome[tr])) - mean(na.omit(em_experiment$outcome[ct]))
+```
+### Covariate balance
+```{r}
+vars <- c("democrat", "age", "female", "non_white","treated")
+covs1 <- na.omit(em_experiment[,vars])
+bal.tab(covs1, treat = covs1$treated)
+```
+### Coarsening 1
+```{r eval=FALSE, include=FALSE}
+cem1_var <- c("democrat", "age", "female", "non_white","treated", "outcome")
+data1 <- na.omit(em_experiment[,cem1_var])
+
+X_1 <- data1 %>%
+  dplyr::select(democrat, age, female, non_white, treated, outcome)
+
+m.out.cem <- matchit(treated ~ democrat + age + female + non_white,
+                     data = data1, method = "cem")
+
+bal_tab_cem <- bal.tab(m.out.cem, thresholds = c(m = 0.1), un = TRUE)
+bal_tab_cem
+```
+```{r eval=FALSE, include=FALSE}
+lp.cem <- love.plot(
+  m.out.cem,
+  threshold = .1,
+  binary = 'std',
+  treat = data1$treated,
+  covs = X_1)
+
+lp.cem
+```
+### ATT by CEM
+```{r eval=FALSE, include=FALSE}
+m.data.cem <- match.data(m.out.cem)
+m.data.cem
+```
+### cem regression 
+```{r eval=FALSE, include=FALSE}
+lm.cem1 <- lm(outcome ~ treated, data = m.data.cem)
+summary(lm.cem1)
+```
+```{r eval=FALSE, include=FALSE}
+lm.cem2 <- lm(outcome ~ treated +
+                democrat +
+                age +
+                female +
+                non_white, data = m.data.cem)
+summary(lm.cem2)
+```
+# Genetic matching
+```{r eval=FALSE, include=FALSE}
+set.seed(1)
+m.out.gen <- matchit(treated ~ democrat + age + female + non_white, data = data1, replace = TRUE, method = "genetic")
+bal_tab_gen <- bal.tab(m.out.gen, thresholds = c(m = 0.1), un = TRUE)
+bal_tab_gen
+```
+```{r eval=FALSE, include=FALSE}
+lp.gen <- love.plot(
+  m.out.gen,
+  threshold = .1,
+  binary = 'std',
+  treat = data11$past_pkpres,
+  covs = X_11
+)
+
+lp.gen
+```
+## Nearest neighbour matching
+```{r eval=FALSE, include=FALSE}
+m.out.nnm <- matchit(treated ~ democrat + age + female + non_white, data = data1, replace = TRUE, method = "nearest")
+bal_tab_nnm <- bal.tab(m.out.nnm, thresholds = c(m = 0.1), un = TRUE)
+bal_tab_nnm
+```
+```{r eval=FALSE, include=FALSE}
+lp.nnm <- love.plot(
+  m.out.nnm,
+  threshold = .1,
+  binary = 'std',
+  treat = data11$treated,
+  covs = X_11
+)
+
+lp.nnm
+```
+
+
+
+
+
+# To-do:
+
+matching
+
+covariate balance
+
+summary statistics
+
+comparison between the datasets
