@@ -1,0 +1,363 @@
+---
+title: "MidtermReport"
+author: "Lee Che Yuet Isaac"
+date: "3/31/2023"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+# Progress so far
+
+Preparation for the datasets are almost done, then can be moved on to the matching phase. There is a minor problem regarding including states as a covariate for matching, which is still considering for a solution.
+
+
+
+
+# Initialization
+
+```{r, results = 'hide', message = FALSE}
+rm(list=ls())
+gc()
+```
+
+```{r message=FALSE, warning=FALSE}
+# required packages
+packages <- c('readr','dplyr', 'AER','stargazer','haven','cem','Matching','MatchIt','cobalt')
+
+# install any packages that are not yet installed
+installed_packages <- packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+
+# load required packages
+invisible(lapply(packages, library, character.only = TRUE))
+```
+
+# Vaccine incentives
+```{r}
+# load dataset
+vaccine_incentives <- read_delim("C:/Users/isaac/Desktop/Courses/22fall/SOSC 4110/vaccine incentives/analysis_ready.csv",
+delim = ";", escape_double = FALSE, trim_ws = TRUE) %>% # need to change the folder path
+  as_tibble()
+#vaccine_incentives
+```
+```{r}
+# glimpse
+#glimpse(vaccine_incentives)
+```
+
+```{r}
+# variables
+#names(vaccine_incentives)
+```
+
+```{r}
+# experimental groups
+count(vaccine_incentives, Treatment)
+```
+```{r}
+# experimental groups
+count(vaccine_incentives, Treatment2)
+```
+Control: treatment1(CDC Health Information)
+Treatment version 1: treatment2(Lottery Incentive)
+Treatment version 2: treatment3(Cash Voucher Incentive)
+
+## Data cleaning
+```{r}
+vi_cleaned <- vaccine_incentives %>%
+  mutate(
+    treatment_v1 = case_when(Treatment == 'treatment2' ~ 1,
+                             Treatment == 'treatment1' ~ 0,
+                             Treatment == 'treatment3' ~ NA_real_),
+    treatment_v2 = case_when(Treatment == 'treatment3' ~ 1,
+                             Treatment == 'treatment1' ~ 0,
+                             Treatment == 'treatment2' ~ NA_real_),
+    male = case_when(gender == 'Male' ~ 1,
+                     gender == 'female' ~ 0),
+    age_young = case_when(Age_cat == 'Young' ~ 0,
+                          Age_cat == 'Old' ~ 1),
+    race_white = case_when(Race == 'White' ~ 1,
+                           Race == 'Black' ~ 0,
+                           Race == 'Other' ~ 0),
+    race_black = case_when(Race == 'Black' ~ 1,
+                           Race == 'White' ~ 0,
+                           Race == 'Other' ~ 0),
+    race_other = case_when(Race == 'Other' ~ 1,
+                           Race == 'Black' ~ 0,
+                           Race == 'White' ~ 0),
+    education_low = case_when(Education == 'Low' ~ 1,
+                              Education == 'Medium' ~ 0,
+                              Education == 'High' ~ 0),
+    education_medium = case_when(Education == 'Medium' ~ 1,
+                              Education == 'Low' ~ 0,
+                              Education == 'High' ~ 0),
+    education_high = case_when(Education == 'High' ~ 1,
+                              Education == 'Medium' ~ 0,
+                              Education == 'Low' ~ 0))
+```
+
+## Coarsened Exact Matching
+### Treatment 1 vs Control
+```{r}
+tr <- which(vi_cleaned$treatment_v1 == 1)
+ct <- which(vi_cleaned$treatment_v1 == 0)
+ntr <- length(tr)
+ntr
+nct <- length(ct)
+nct
+```
+#### Basic estimate
+```{r}
+mean(na.omit(vi_cleaned$clicked[tr])) - mean(na.omit(vi_cleaned$clicked[ct]))
+```
+```{r}
+vi_cleaned_treatment_v1 <- vi_cleaned %>%
+  filter(treatment_v1 < 2 )
+count(vi_cleaned_treatment_v1, treatment_v1)
+```
+
+```{r}
+vars <- c("treatment_v1",
+          "male", 
+          "age_young",
+          "race_white", 
+          "race_black",
+          "race_other",
+          "education_low",
+          "education_medium",
+          "education_high",
+          "Trumppercent")
+covs1 <- vi_cleaned_treatment_v1[,vars]
+covs1
+bal.tab(covs1, treat = vi_cleaned_treatment_v1$treatment_v1)
+```
+
+
+
+# Email mobilization
+```{r}
+# load dataset: email_mobilization
+email_mobilization <- read_csv("C:/Users/isaac/Desktop/Courses/22fall/SOSC 4110/email mobilization/data/subset_finalAnalysisFile20170711.csv") %>% # need to change the folder path
+  as_tibble()
+```
+
+Have a glimpse on the dataset.
+
+```{r}
+head(email_mobilization)
+```
+
+Look into the distribution of the experimental groups.
+
+    1.  `0`: Control
+    2.  `1`: Election Information
+    3.  `2`: Social Pressure
+    4.  `3`: Native Threat
+    5.  `4`: Latino Group Threat.
+```{r}
+count(email_mobilization, treat)
+```
+
+## Summary statistics of the whole dataset
+Some of the variables are binary indicators so they are converted into factors.
+```{r}
+email_mobilization %>%
+  # turn binary indicators into factors so that we can get more useful summaries
+  mutate(gender = factor(gender), 
+         race = factor(race),
+         party = factor(party), 
+         voterStatus = factor(voterStatus),
+         congressionalDistrict = factor(congressionalDistrict),
+         general16 = factor(general16),
+         outcome = factor(outcome),
+         historyCode2016 = factor(historyCode2016), 
+         recent = factor(recent),
+         likely = factor(likely),
+         general12 = factor(general12),
+         treat = factor(treat),
+         registered_prior = factor(registered_prior),
+         minority = factor(minority),
+         major_party = factor(major_party),
+         validEmail = factor(validEmail),
+         pastGeneral = factor(pastGeneral)
+         ) %>%
+  summary()
+```
+## Create the experiment subset
+Filtering out the observations that are not in the experimental groups.
+```{r} 
+em_experiment <- email_mobilization %>%
+  filter(treat != 'NA') %>%
+  as_tibble()
+
+  
+head(em_experiment)
+```
+Double checking the distribution of the experimental groups.
+```{r}
+count(em_experiment, treat)
+```
+## Summary statistics of the whole dataset
+Some of the variables are binary indicators so they are converted into factors.   
+```{r}
+em_experiment %>%
+  # turn binary indicators into factors so that we can get more useful summaries
+  mutate(gender = factor(gender), 
+         race = factor(race),
+         party = factor(party), 
+         voterStatus = factor(voterStatus),
+         congressionalDistrict = factor(congressionalDistrict),
+         general16 = factor(general16),
+         outcome = factor(outcome),
+         historyCode2016 = factor(historyCode2016), 
+         recent = factor(recent),
+         likely = factor(likely),
+         general12 = factor(general12),
+         treat = factor(treat),
+         registered_prior = factor(registered_prior),
+         minority = factor(minority),
+         major_party = factor(major_party),
+         validEmail = factor(validEmail),
+         pastGeneral = factor(pastGeneral)
+         ) %>%
+  summary()
+```
+## Experimental benchmark
+Creating a basic and preliminary estimate of the treatment effect.
+```{r}
+em_experiment <- em_experiment %>%
+  mutate(treated = case_when(treat == 0 ~ 0,
+                             treat > 0 ~ 1),
+         democrat = case_when(major_party == 1 ~ 1,
+                              major_party > 1 ~ 0),
+         female = if_else(gender == "F", 1,0),
+         non_white = if_else(minority == 1,1,0))
+         
+
+model_em_1 <- lm(outcome ~ treated, data = em_experiment)
+summary(model_em_1)
+```
+Try adding other covariates into the regression and se
+```{r}
+model_em_2 <- lm(outcome ~ treated + 
+                   gender +
+                   age +
+                   race +
+                   major_party +
+                   minority
+                   , data = em_experiment)
+summary(model_em_2)
+```
+## Coarsened Exact Matching
+```{r}
+tr <- which(em_experiment$treated == 1)
+ct <- which(em_experiment$treated == 0)
+ntr <- length(tr)
+ntr
+nct <- length(ct)
+nct
+```
+### Basic estimate
+```{r}
+mean(na.omit(em_experiment$outcome[tr])) - mean(na.omit(em_experiment$outcome[ct]))
+```
+### Covariate balance
+```{r}
+vars <- c("democrat", "age", "female", "non_white","treated")
+covs1 <- na.omit(em_experiment[,vars])
+bal.tab(covs1, treat = covs1$treated)
+```
+### Coarsening 1
+```{r}
+cem1_var <- c("democrat", "age", "female", "non_white","treated", "outcome")
+data1 <- na.omit(em_experiment[,cem1_var])
+
+X_1 <- data1 %>%
+  dplyr::select(democrat, age, female, non_white, treated, outcome)
+
+m.out.cem <- matchit(treated ~ democrat + age + female + non_white,
+                     data = data1, method = "cem")
+
+bal_tab_cem <- bal.tab(m.out.cem, thresholds = c(m = 0.1), un = TRUE)
+bal_tab_cem
+```
+```{r}
+lp.cem <- love.plot(
+  m.out.cem,
+  threshold = .1,
+  binary = 'std',
+  treat = data1$treated,
+  covs = X_1)
+
+lp.cem
+```
+### ATT by CEM
+```{r}
+m.data.cem <- match.data(m.out.cem)
+m.data.cem
+```
+### cem regression 
+```{r}
+lm.cem1 <- lm(outcome ~ treated, data = m.data.cem)
+summary(lm.cem1)
+```
+```{r}
+lm.cem2 <- lm(outcome ~ treated +
+                democrat +
+                age +
+                female +
+                non_white, data = m.data.cem)
+summary(lm.cem2)
+```
+## Genetic matching
+```{r}
+set.seed(1)
+m.out.gen <- matchit(treated ~ democrat + age + female + non_white, data = data1, replace = TRUE, method = "genetic")
+bal_tab_gen <- bal.tab(m.out.gen, thresholds = c(m = 0.1), un = TRUE)
+bal_tab_gen
+```
+```{r}
+lp.gen <- love.plot(
+  m.out.gen,
+  threshold = .1,
+  binary = 'std',
+  treat = data11$past_pkpres,
+  covs = X_11
+)
+
+lp.gen
+```
+## Nearest neighbour matching
+```{r}
+m.out.nnm <- matchit(treated ~ democrat + age + female + non_white, data = data1, replace = TRUE, method = "nearest")
+bal_tab_nnm <- bal.tab(m.out.nnm, thresholds = c(m = 0.1), un = TRUE)
+bal_tab_nnm
+```
+```{r}
+lp.nnm <- love.plot(
+  m.out.nnm,
+  threshold = .1,
+  binary = 'std',
+  treat = data11$treated,
+  covs = X_11
+)
+
+lp.nnm
+```
+
+
+
+
+
+# To-do:
+
+matching
+
+covariate balance
+
+summary statistics
+
+comparison between the datasets
