@@ -1,0 +1,487 @@
+---
+title: "Final paper"
+author: "Lee Che Yuet Isaac"
+date: "5/2/2022"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+# Environment preparation
+**Preliminaries:**
+```{r, results = 'hide', message = FALSE}
+rm(list=ls())
+```
+
+```{r message=FALSE, warning=FALSE}
+# required packages
+packages <- c('dplyr', 'AER','stargazer','haven','cem','Matching','MatchIt','cobalt')
+
+# install any packages that are not yet installed
+installed_packages <- packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+
+# load required packages
+invisible(lapply(packages, library, character.only = TRUE))
+```
+```{r}
+# load dataset
+peacekeeping <- read_dta("Replication_Costalli_Negri_IPSR2021.dta") %>%
+  as_tibble()
+peacekeeping 
+```
+# Summary Statistics
+```{r}
+peacekeeping %>%
+  mutate(contig_hr = factor(contig_hr),
+         contig_srb = factor(contig_srb),
+         internal_bord = factor(internal_bord),
+         pk_presence = factor(pk_presence),
+         pk1dicot = factor(pk1dicot),
+         past_pkpres = factor(past_pkpres),
+         past_pk1dicot = factor(past_pk1dicot),
+         municipality = factor(municipality)) %>%
+  summary()
+```
+### Generation of summary statistics results
+
+##### All
+```{r message=FALSE, warning=FALSE}
+sumstat_all <- peacekeeping %>%
+  dplyr::select(
+    "year",
+    "contig_hr",
+    "contig_srb",
+    "internal_bord",
+    "nat_polar",
+    "share_cultland",
+    "pk_presence",
+    "pk1dicot",
+    "log_victims",
+    "log_pop",
+    "past_vict",
+    "past_pkpres",
+    "past_pk1dicot"
+  )
+  
+stargazer(
+  as.data.frame(sumstat_all),
+  digits = 2,
+  title = "Summary Statistics",
+  summary.stat = c("min", "max", "mean", "sd"),
+  covariate.labels = c(
+    "Year",
+    "Contiguity Croatia",
+    "Contiguity Serbia",
+    "Internal border",
+    "Ethnic polarization",
+    "Open terrain",
+    "Presence of peacekeeping",
+    "Active peacekeeping",
+    "Violence (logged)",
+    "Population (logged)",
+    "Violence (t−1) (logged)",
+    "Presence of peacekeeping (t−1)",
+    "Active peacekeeping (t−1)"
+  ),
+  type = "html",
+  out = "Summary Statistics all.doc"
+)
+dim(sumstat_all)
+```
+##### Treatment group
+```{r message=FALSE, warning=FALSE}
+sumstat_tr <- peacekeeping %>%
+  filter(past_pkpres == 1) %>%
+  dplyr::select(
+    "year",
+    "contig_hr",
+    "contig_srb",
+    "internal_bord",
+    "nat_polar",
+    "share_cultland",
+    "pk_presence",
+    "pk1dicot",
+    "log_victims",
+    "log_pop",
+    "past_vict"
+  )
+  
+stargazer(
+  as.data.frame(sumstat_tr),
+  digits = 2,
+  title = "Summary Statistics by treatment and control group",
+  summary.stat = c("min", "max", "mean", "sd"),
+  covariate.labels = c(
+    "Year",
+    "Contiguity Croatia",
+    "Contiguity Serbia",
+    "Internal border",
+    "Ethnic polarization",
+    "Open terrain",
+    "Presence of peacekeeping",
+    "Active peacekeeping",
+    "Violence (logged)",
+    "Population (logged)",
+    "Violence (t−1) (logged)"
+  ),
+  type = "html",
+  out = "Summary Statistics treatment group1.doc"
+)
+dim(sumstat_tr)
+```
+##### Control group
+```{r message=FALSE, warning=FALSE}
+sumstat_Cr <- peacekeeping %>%
+  filter(past_pkpres == 0) %>%
+  dplyr::select(
+    "year",
+    "contig_hr",
+    "contig_srb",
+    "internal_bord",
+    "nat_polar",
+    "share_cultland",
+    "pk_presence",
+    "pk1dicot",
+    "log_victims",
+    "log_pop",
+    "past_vict"
+  )
+  
+stargazer(
+  as.data.frame(sumstat_Cr),
+  digits = 2,
+  title = "Summary Statistics by treatment and control group",
+  summary.stat = c("min", "max", "mean", "sd"),
+  covariate.labels = c(
+    "Year",
+    "Contiguity Croatia",
+    "Contiguity Serbia",
+    "Internal border",
+    "Ethnic polarization",
+    "Open terrain",
+    "Presence of peacekeeping",
+    "Active peacekeeping",
+    "Violence (logged)",
+    "Population (logged)",
+    "Violence (t−1) (logged)"
+  ),
+  type = "html",
+  out = "Summary Statistics control group.doc"
+)
+dim(sumstat_Cr)
+```
+# Experimental Benchmark
+
+### treatment only 
+```{r}
+lm1 <- lm(log_victims ~ past_pkpres, data = peacekeeping)
+summary(lm1)
+```
+
+### with control variables
+```{r}
+lm3 <- lm(log_victims ~ past_pkpres +
+            past_vict +
+            nat_polar +
+            log_pop +
+            contig_hr +
+            contig_srb +
+            internal_bord +
+            share_cultland, 
+          data = peacekeeping)
+summary(lm3)
+```
+```{r eval=FALSE, include=FALSE}
+# export regression result
+stargazer(lm1, lm3,
+          type="html",
+          title="Regression before matching",
+          out="regression_results_lm1.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=2)
+```
+# Coarsened Exact Matching
+```{r}
+tr <- which(peacekeeping$past_pkpres == 1)
+ct <- which(peacekeeping$past_pkpres == 0)
+ntr <- length(tr)
+ntr
+nct <- length(ct)
+nct
+```
+### Basic estimate
+```{r}
+mean(na.omit(peacekeeping$log_victims[tr])) - mean(na.omit(peacekeeping$log_victims[ct]))
+```
+```{r}
+vars <- c("past_vict", "nat_polar", "log_pop", "contig_hr", "contig_srb", "internal_bord" , "share_cultland","past_pkpres")
+covs1 <- na.omit(peacekeeping[,vars])
+bal.tab(covs1, treat = covs1$past_pkpres)
+```
+1. nat_polar, past_vict, log_pop, contig_hr, contig_srb
+2. municipality, internal_bord, share_cultland 
+
+### Coarsening 1
+```{r}
+#cem1_var <- c("nat_polar", "past_vict", "log_pop", "contig_hr", "contig_srb","past_pkpres","log_victims")
+
+cem1_var <- c("log_victims",
+              "past_pkpres",
+            "past_vict", 
+            "nat_polar", 
+            "log_pop", 
+            "contig_hr",
+            "contig_srb",
+            "internal_bord",
+            "share_cultland")
+data11 <- na.omit(peacekeeping[,cem1_var])
+
+X_11 <- data11 %>%
+  dplyr::select(nat_polar, past_vict, log_pop, contig_hr, contig_srb)
+
+#mat11 <- cem(treatment = "past_pkpres", data = data11, keep.all = T)
+#mat11
+
+m.out.cem <- matchit(past_pkpres ~ nat_polar + past_vict + log_pop + contig_hr + contig_srb, data = data11, method = "cem")
+```
+```{r}
+bal_tab_cem <- bal.tab(m.out.cem, thresholds = c(m = 0.1), un = TRUE)
+bal_tab_cem
+```
+```{r}
+lp.cem <- love.plot(
+  m.out.cem,
+  threshold = .1,
+  binary = 'std',
+  treat = data11$past_pkpres,
+  covs = X_11
+)
+
+lp.cem
+```
+# 1:1 distance matching
+```{r}
+m.out.1to1 <-
+  Match(
+    Tr = data11$past_pkpres,
+    X = X_11,
+    estimand = "ATT",
+    M = 1,
+    ties = TRUE,
+    replace = TRUE,
+    Weight = 2
+  )
+
+bal_tab_1to1 <- bal.tab(m.out.1to1, treat = data11$past_pkpres, covs = X_11, thresholds = c(m = 0.1), un = TRUE)
+bal_tab_1to1
+```
+```{r}
+lp.1to1 <- love.plot(
+  m.out.1to1,
+  threshold = .1,
+  binary = 'std',
+  treat = data11$past_pkpres,
+  covs = X_11
+)
+
+lp.1to1
+```
+# 1:2 distance matching
+```{r}
+m.out.1to2 <-
+  Match(
+    Tr = data11$past_pkpres,
+    X = X_11,
+    estimand = "ATT",
+    M = 2,
+    ties = TRUE,
+    replace = TRUE,
+    Weight = 2
+  )
+
+bal_tab_1to2 <- bal.tab(m.out.1to2, treat = data11$past_pkpres, covs = X_11, thresholds = c(m = 0.1), un = TRUE)
+bal_tab_1to2
+```
+```{r}
+lp.1to2 <- love.plot(
+  m.out.1to2,
+  threshold = .1,
+  binary = 'std',
+  treat = data11$past_pkpres,
+  covs = X_11
+)
+
+lp.1to2
+```
+# 1:3 distance matching
+```{r}
+m.out.1to3 <-
+  Match(
+    Tr = data11$past_pkpres,
+    X = X_11,
+    estimand = "ATT",
+    M = 3,
+    ties = TRUE,
+    replace = TRUE,
+    Weight = 2
+  )
+
+bal_tab_1to3 <- bal.tab(m.out.1to3, treat = data11$past_pkpres, covs = X_11, thresholds = c(m = 0.1), un = TRUE)
+bal_tab_1to3
+```
+```{r}
+lp.1to3 <- love.plot(
+  m.out.1to3,
+  threshold = .1,
+  binary = 'std',
+  treat = data11$past_pkpres,
+  covs = X_11
+)
+
+lp.1to3
+```
+# Nearest neighbour matching
+```{r}
+m.out.nnm <- matchit(past_pkpres ~ nat_polar + past_vict + log_pop + contig_hr + contig_srb, data = data11, replace = TRUE, method = "nearest")
+bal_tab_nnm <- bal.tab(m.out.nnm, thresholds = c(m = 0.1), un = TRUE)
+bal_tab_nnm
+```
+```{r}
+lp.nnm <- love.plot(
+  m.out.nnm,
+  threshold = .1,
+  binary = 'std',
+  treat = data11$past_pkpres,
+  covs = X_11
+)
+
+lp.nnm
+```
+# Propensity score matching
+```{r}
+m.out.pscore <- matchit(past_pkpres ~ nat_polar + past_vict + log_pop + contig_hr + contig_srb, data = data11, replace = TRUE, method = "full", distance = "glm", link = "probit")
+bal_tab_pscore <- bal.tab(m.out.pscore, thresholds = c(m = 0.1), un = TRUE)
+bal_tab_pscore
+```
+```{r}
+lp.pscore <- love.plot(
+  m.out.pscore,
+  threshold = .1,
+  binary = 'std',
+  treat = data11$past_pkpres,
+  covs = X_11
+)
+
+lp.pscore
+```
+# Genetic matching
+```{r}
+set.seed(1)
+m.out.gen <- matchit(past_pkpres ~ nat_polar + past_vict + log_pop + contig_hr + contig_srb, data = data11, replace = TRUE, method = "genetic")
+bal_tab_gen <- bal.tab(m.out.gen, thresholds = c(m = 0.1), un = TRUE)
+bal_tab_gen
+```
+```{r}
+lp.gen <- love.plot(
+  m.out.gen,
+  threshold = .1,
+  binary = 'std',
+  treat = data11$past_pkpres,
+  covs = X_11
+)
+
+lp.gen
+```
+# ATT by CEM
+```{r}
+m.data.cem <- match.data(m.out.cem)
+m.data.cem
+```
+# ATT by 1:1
+```{r}
+m.out.1to1.att <-
+  Match(
+    Y = data11$log_victims,
+    Tr = data11$past_pkpres,
+    X = X_11,
+    estimand = "ATT",
+    M = 1,
+    ties = TRUE,
+    replace = TRUE,
+    Weight = 2
+  )
+summary(m.out.1to1.att)
+```
+
+### cem regression 
+```{r}
+lm.cem1 <- lm(log_victims ~ past_pkpres, data = m.data.cem)
+summary(lm.cem1)
+```
+
+### with control
+```{r eval=FALSE, include=FALSE}
+lm.cem2 <- lm(log_victims ~ past_pkpres +
+            past_vict +
+            nat_polar +
+            log_pop +
+            contig_hr +
+            contig_srb +
+            internal_bord +
+            share_cultland, 
+          data = m.data.cem)
+summary(lm.cem2)
+```
+
+```{r eval=FALSE, include=FALSE}
+# export regression result
+stargazer(lm.cem1, lm.cem2,
+          type="html",
+          title="Regression after cem matching",
+          out="regression_results_cem.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=2)
+```
+
+```{r eval=FALSE, include=FALSE}
+# export regression result
+stargazer(lm1,lm.cem1,lm3,lm.cem2,
+          type="html",
+          title="Regression results",
+          out="regression_results_all.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=2)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
