@@ -179,7 +179,8 @@ vi_covs1 <- vi_cleaned %>%
 
 bal.tab(vi_covs1, treat = vi_covs1$treated)
 ```
-### CEM
+### 
+Coarsened Exact Matching
 ```{r CEM}
 vi_data1 <- na.omit(vi_cleaned)
 

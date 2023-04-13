@@ -7,22 +7,18 @@ output:
   pdf_document: default
   word_document: default
 ---
+
 # Progress so far
 
 Preparation for the datasets are almost done, then can be moved on to the matching phase. There is a minor problem regarding including states as a covariate for matching, which is still considering for a solution.
 
-
-
-
 # Initialization
-
-```{r, results = 'hide', message = FALSE}
+```{r working directory setting and clearing environment, results = 'hide', message = FALSE}
 #getwd()
 #setwd()
 #rm(list=ls())
 #gc()
 ```
-
 ```{r Loading packages ,message=FALSE, warning=FALSE, include=FALSE}
 # required packages
 packages <- c('readr','dplyr', 'AER','stargazer','haven','cem','Matching','MatchIt','cobalt','rgenoud','optmatch','Rglpk')
@@ -45,13 +41,14 @@ email_mobilization <- read_csv("subset_finalAnalysisFile20170711.csv") %>% # nee
 # Have a glimpse on the dataset.
 head(email_mobilization)
 ```
-Look into the distribution of the experimental groups.  
-
-    1.  `0`: Control  
-    2.  `1`: Election Information  
-    3.  `2`: Social Pressure  
-    4.  `3`: Native Threat  
-    5.  `4`: Latino Group Threat.  
+Look into the distribution of the experimental groups.
+```         
+1.  `0`: Control  
+2.  `1`: Election Information  
+3.  `2`: Social Pressure  
+4.  `3`: Native Threat  
+5.  `4`: Latino Group Threat.  
+```
 ```{r Counting experimental groups by treatment}
 count(email_mobilization, treat)
 ```
@@ -76,8 +73,8 @@ em_cleaned <- email_mobilization %>%
 head(em_cleaned)
 ```
 ## Summary statistics of the whole dataset
-Some of the variables are binary indicators so they are converted into factors. 
-```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+Some of the variables are binary indicators so they are converted into factors.
+```{r Summary Statistics ,message=FALSE, warning=FALSE, paged.print=TRUE}
 em_cleaned %>%
   # turn binary indicators into factors so that we can get more useful summaries
   mutate(gender = factor(gender), 
@@ -106,14 +103,15 @@ em_cleaned %>%
          non_white= factor(non_white)) %>%
   summary()
 ```
-## Experimental benchmark
+## Control vs Treatment 1
+###Experimental benchmark
 Creating a basic and preliminary estimate of the treatment effect.
-```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r Experimental benchmark by regression,message=FALSE, warning=FALSE, paged.print=TRUE}
 model_em_1 <- lm(outcome ~ treated, data = em_cleaned)
 summary(model_em_1)
 ```
 Try adding other covariates into the regression and see
-```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r Experimental benchmark by regression with control ,message=FALSE, warning=FALSE, paged.print=TRUE}
 model_em_2 <- lm(outcome ~ treated + 
                    age +
                    female +
@@ -124,8 +122,8 @@ model_em_2 <- lm(outcome ~ treated +
                    general12, data = em_cleaned)
 summary(model_em_2)
 ```
-## Coarsened Exact Matching
-```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+### Matching preparation
+```{r CEM preparation message=FALSE, warning=FALSE, paged.print=TRUE}
 em_tr <- which(em_cleaned$treated == 1)
 em_ct <- which(em_cleaned$treated == 0)
 em_ntr <- length(em_tr)
@@ -143,8 +141,8 @@ em_vars <- c("treated", "female","race", "party", "congressionalDistrict",    "h
 em_covs1 <- na.omit(em_cleaned[,em_vars])
 bal.tab(em_covs1, treat = em_covs1$treated)
 ```
-### Coarsening 1
-```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+### Coarsened Exact Matching
+```{r CEM,message=FALSE, warning=FALSE, paged.print=TRUE}
 em_cem1_var <- c("treated", "female","race", "party", "congressionalDistrict",    "historyCode2016", "general12","age", "outcome")
 em_data1 <- na.omit(em_cleaned[,em_cem1_var])
 
@@ -163,7 +161,7 @@ em_m.out.cem <- matchit(treated ~ female +
 em_bal_tab_cem <- bal.tab(em_m.out.cem, thresholds = c(m = 0.01), un = TRUE)
 em_bal_tab_cem
 ```
-```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r Love plot after CEM ,message=FALSE, warning=FALSE, paged.print=TRUE}
 em_lp.cem <- love.plot(
   em_m.out.cem,
   threshold = .01,
@@ -174,16 +172,16 @@ em_lp.cem <- love.plot(
 em_lp.cem
 ```
 ### ATT by CEM
-```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r Reproducing the dataset after CEM,message=FALSE, warning=FALSE, paged.print=TRUE}
 em_m.data.cem <- match.data(em_m.out.cem)
 head(em_m.data.cem)
 ```
-### cem regression 
-```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+### CEM regression
+```{r Basic regression after CEM, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_lm.cem1 <- lm(outcome ~ treated, data = em_m.data.cem)
 summary(em_lm.cem1)
 ```
-```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r Regression with control after CEM, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_lm.cem2 <- lm(outcome ~ treated + 
                    age +
                    female +
@@ -195,7 +193,7 @@ em_lm.cem2 <- lm(outcome ~ treated +
 summary(em_lm.cem2)
 ```
 ## Genetic matching
-```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r Genetic matching, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 set.seed(1)
 em_m.out.gen <- matchit(treated ~ female +
                           race+
@@ -210,7 +208,7 @@ em_m.out.gen <- matchit(treated ~ female +
 em_bal_tab_gen <- bal.tab(em_m.out.gen, thresholds = c(m = 0.01), un = TRUE)
 em_bal_tab_gen
 ```
-```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+```{r Love plot after genetic matching, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 lp.gen <- love.plot(
   m.out.gen,
   threshold = .1,
@@ -222,26 +220,31 @@ lp.gen <- love.plot(
 lp.gen
 ```
 ## Nearest neighbour matching
-```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
-m.out.nnm <- matchit(treated ~ democrat + age + female + non_white, data = data1, replace = TRUE, method = "nearest")
-bal_tab_nnm <- bal.tab(m.out.nnm, thresholds = c(m = 0.1), un = TRUE)
-bal_tab_nnm
+```{r NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_m.out.nnm <- matchit(treated ~ female +
+                          race+
+                          party+
+                          congressionalDistrict+
+                          historyCode2016+
+                          general12 + 
+                          age, 
+                        data = em_data1, 
+                        replace = TRUE, 
+                        method = "nearest")
+em_bal_tab_nnm <- bal.tab(em_m.out.nnm, thresholds = c(m = 0.01), un = TRUE)
+em_bal_tab_nnm
 ```
-```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
-lp.nnm <- love.plot(
-  m.out.nnm,
-  threshold = .1,
+```{r Love plot after NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_lp.nnm <- love.plot(
+  em_m.out.nnm,
+  threshold = .01,
   binary = 'std',
-  treat = data11$treated,
-  covs = X_11
+  treat = em_data1$treated,
+  covs = em_X_1
 )
 
-lp.nnm
+em_lp.nnm
 ```
-
-
-
-
 
 # To-do:
 
