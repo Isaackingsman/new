@@ -17,13 +17,15 @@ Preparation for the datasets are almost done, then can be moved on to the matchi
 # Initialization
 
 ```{r, results = 'hide', message = FALSE}
-rm(list=ls())
-gc()
+#getwd()
+#setwd()
+#rm(list=ls())
+#gc()
 ```
 
-```{r message=FALSE, warning=FALSE}
+```{r Loading packages ,message=FALSE, warning=FALSE, include=FALSE}
 # required packages
-packages <- c('readr','dplyr', 'AER','stargazer','haven','cem','Matching','MatchIt','cobalt')
+packages <- c('readr','dplyr', 'AER','stargazer','haven','cem','Matching','MatchIt','cobalt','rgenoud','optmatch','Rglpk')
 
 # install any packages that are not yet installed
 installed_packages <- packages %in% rownames(installed.packages())
@@ -34,137 +36,49 @@ if (any(installed_packages == FALSE)) {
 # load required packages
 invisible(lapply(packages, library, character.only = TRUE))
 ```
-
-# Vaccine incentives
-```{r}
-# load dataset
-vaccine_incentives <- read_delim("C:/Users/isaac/Desktop/Courses/22fall/SOSC 4110/vaccine incentives/analysis_ready.csv",
-delim = ";", escape_double = FALSE, trim_ws = TRUE) %>% # need to change the folder path
-  as_tibble()
-#vaccine_incentives
-```
-```{r}
-# glimpse
-#glimpse(vaccine_incentives)
-```
-
-```{r}
-# variables
-#names(vaccine_incentives)
-```
-
-```{r}
-# experimental groups
-count(vaccine_incentives, Treatment)
-```
-```{r}
-# experimental groups
-count(vaccine_incentives, Treatment2)
-```
-Control: treatment1(CDC Health Information)
-Treatment version 1: treatment2(Lottery Incentive)
-Treatment version 2: treatment3(Cash Voucher Incentive)
-
-## Data cleaning
-```{r}
-vi_cleaned <- vaccine_incentives %>%
-  mutate(
-    treatment_v1 = case_when(Treatment == 'treatment2' ~ 1,
-                             Treatment == 'treatment1' ~ 0,
-                             Treatment == 'treatment3' ~ NA_real_),
-    treatment_v2 = case_when(Treatment == 'treatment3' ~ 1,
-                             Treatment == 'treatment1' ~ 0,
-                             Treatment == 'treatment2' ~ NA_real_),
-    male = case_when(gender == 'Male' ~ 1,
-                     gender == 'female' ~ 0),
-    age_young = case_when(Age_cat == 'Young' ~ 0,
-                          Age_cat == 'Old' ~ 1),
-    race_white = case_when(Race == 'White' ~ 1,
-                           Race == 'Black' ~ 0,
-                           Race == 'Other' ~ 0),
-    race_black = case_when(Race == 'Black' ~ 1,
-                           Race == 'White' ~ 0,
-                           Race == 'Other' ~ 0),
-    race_other = case_when(Race == 'Other' ~ 1,
-                           Race == 'Black' ~ 0,
-                           Race == 'White' ~ 0),
-    education_low = case_when(Education == 'Low' ~ 1,
-                              Education == 'Medium' ~ 0,
-                              Education == 'High' ~ 0),
-    education_medium = case_when(Education == 'Medium' ~ 1,
-                              Education == 'Low' ~ 0,
-                              Education == 'High' ~ 0),
-    education_high = case_when(Education == 'High' ~ 1,
-                              Education == 'Medium' ~ 0,
-                              Education == 'Low' ~ 0))
-```
-
-## Coarsened Exact Matching
-### Treatment 1 vs Control
-```{r}
-tr <- which(vi_cleaned$treatment_v1 == 1)
-ct <- which(vi_cleaned$treatment_v1 == 0)
-ntr <- length(tr)
-ntr
-nct <- length(ct)
-nct
-```
-#### Basic estimate
-```{r}
-mean(na.omit(vi_cleaned$clicked[tr])) - mean(na.omit(vi_cleaned$clicked[ct]))
-```
-```{r}
-vi_cleaned_treatment_v1 <- vi_cleaned %>%
-  filter(treatment_v1 < 2 )
-count(vi_cleaned_treatment_v1, treatment_v1)
-```
-
-```{r}
-vars <- c("treatment_v1",
-          "male", 
-          "age_young",
-          "race_white", 
-          "race_black",
-          "race_other",
-          "education_low",
-          "education_medium",
-          "education_high",
-          "Trumppercent")
-covs1 <- vi_cleaned_treatment_v1[,vars]
-covs1
-bal.tab(covs1, treat = vi_cleaned_treatment_v1$treatment_v1)
-```
-
-
-
 # Email mobilization
-```{r}
+## Loading the dataset as tibble
+```{r Loading the dataset as tibble, message=FALSE, warning=FALSE}
 # load dataset: email_mobilization
-email_mobilization <- read_csv("C:/Users/isaac/Desktop/Courses/22fall/SOSC 4110/email mobilization/data/subset_finalAnalysisFile20170711.csv") %>% # need to change the folder path
+email_mobilization <- read_csv("subset_finalAnalysisFile20170711.csv") %>% # need to change the folder path
   as_tibble()
-```
-
-Have a glimpse on the dataset.
-
-```{r}
+# Have a glimpse on the dataset.
 head(email_mobilization)
 ```
+Look into the distribution of the experimental groups.  
 
-Look into the distribution of the experimental groups.
-
-    1.  `0`: Control
-    2.  `1`: Election Information
-    3.  `2`: Social Pressure
-    4.  `3`: Native Threat
-    5.  `4`: Latino Group Threat.
-```{r}
+    1.  `0`: Control  
+    2.  `1`: Election Information  
+    3.  `2`: Social Pressure  
+    4.  `3`: Native Threat  
+    5.  `4`: Latino Group Threat.  
+```{r Counting experimental groups by treatment}
 count(email_mobilization, treat)
 ```
+## Data cleaning
+```{r Data cleaning, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_cleaned <- email_mobilization %>%
+  filter(registered_prior == 'TRUE' & validEmail == T & treat != 'NA') %>%
+  mutate(historyCode2016 = if_else(is.na(historyCode2016),'N',historyCode2016)) %>%
+  filter(historyCode2016 != 'E') %>%
+  mutate(treated = case_when(treat == 0 ~ 0,
+                             treat > 0 ~ 1),
+         democrat = case_when(major_party == 1 ~ 1,
+                              major_party != 1 ~ 0),
+         republican = case_when(major_party == 2 ~ 1,
+                              major_party != 2 ~ 0),
+         party_other = case_when(major_party == 3 ~ 1,
+                              major_party != 3 ~ 0),
+         female = if_else(gender == "F", 1,0),
+         non_white = if_else(minority == 1,1,0),
+         outcome = if_else(outcome == TRUE, 1,0))
 
+head(em_cleaned)
+```
 ## Summary statistics of the whole dataset
-Some of the variables are binary indicators so they are converted into factors.
-```{r}
-email_mobilization %>%
+Some of the variables are binary indicators so they are converted into factors. 
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+em_cleaned %>%
   # turn binary indicators into factors so that we can get more useful summaries
   mutate(gender = factor(gender), 
          race = factor(race),
@@ -182,144 +96,121 @@ email_mobilization %>%
          minority = factor(minority),
          major_party = factor(major_party),
          validEmail = factor(validEmail),
-         pastGeneral = factor(pastGeneral)
-         ) %>%
-  summary()
-```
-## Create the experiment subset
-Filtering out the observations that are not in the experimental groups.
-```{r} 
-em_experiment <- email_mobilization %>%
-  filter(treat != 'NA') %>%
-  as_tibble()
-
-  
-head(em_experiment)
-```
-Double checking the distribution of the experimental groups.
-```{r}
-count(em_experiment, treat)
-```
-## Summary statistics of the whole dataset
-Some of the variables are binary indicators so they are converted into factors.   
-```{r}
-em_experiment %>%
-  # turn binary indicators into factors so that we can get more useful summaries
-  mutate(gender = factor(gender), 
-         race = factor(race),
-         party = factor(party), 
-         voterStatus = factor(voterStatus),
-         congressionalDistrict = factor(congressionalDistrict),
-         general16 = factor(general16),
-         outcome = factor(outcome),
-         historyCode2016 = factor(historyCode2016), 
-         recent = factor(recent),
-         likely = factor(likely),
-         general12 = factor(general12),
-         treat = factor(treat),
-         registered_prior = factor(registered_prior),
-         minority = factor(minority),
-         major_party = factor(major_party),
-         validEmail = factor(validEmail),
-         pastGeneral = factor(pastGeneral)
-         ) %>%
+         pastGeneral = factor(pastGeneral),
+         historyCode2016 = factor(historyCode2016),
+         treated = factor(treated),
+         democrat = factor(democrat),
+         republican = factor(republican),
+         party_other = factor(party_other),
+         female = factor(female),
+         non_white= factor(non_white)) %>%
   summary()
 ```
 ## Experimental benchmark
 Creating a basic and preliminary estimate of the treatment effect.
-```{r}
-em_experiment <- em_experiment %>%
-  mutate(treated = case_when(treat == 0 ~ 0,
-                             treat > 0 ~ 1),
-         democrat = case_when(major_party == 1 ~ 1,
-                              major_party > 1 ~ 0),
-         female = if_else(gender == "F", 1,0),
-         non_white = if_else(minority == 1,1,0))
-         
-
-model_em_1 <- lm(outcome ~ treated, data = em_experiment)
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+model_em_1 <- lm(outcome ~ treated, data = em_cleaned)
 summary(model_em_1)
 ```
-Try adding other covariates into the regression and se
-```{r}
+Try adding other covariates into the regression and see
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
 model_em_2 <- lm(outcome ~ treated + 
-                   gender +
                    age +
+                   female +
                    race +
-                   major_party +
-                   minority
-                   , data = em_experiment)
+                   party +
+                   congressionalDistrict +
+                   historyCode2016 +
+                   general12, data = em_cleaned)
 summary(model_em_2)
 ```
 ## Coarsened Exact Matching
-```{r}
-tr <- which(em_experiment$treated == 1)
-ct <- which(em_experiment$treated == 0)
-ntr <- length(tr)
-ntr
-nct <- length(ct)
-nct
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+em_tr <- which(em_cleaned$treated == 1)
+em_ct <- which(em_cleaned$treated == 0)
+em_ntr <- length(em_tr)
+em_ntr
+em_nct <- length(em_ct)
+em_nct
 ```
 ### Basic estimate
-```{r}
-mean(na.omit(em_experiment$outcome[tr])) - mean(na.omit(em_experiment$outcome[ct]))
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+mean(na.omit(em_cleaned$outcome[em_tr])) - mean(na.omit(em_cleaned$outcome[em_ct]))
 ```
 ### Covariate balance
-```{r}
-vars <- c("democrat", "age", "female", "non_white","treated")
-covs1 <- na.omit(em_experiment[,vars])
-bal.tab(covs1, treat = covs1$treated)
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+em_vars <- c("treated", "female","race", "party", "congressionalDistrict",    "historyCode2016", "general12", "age")
+em_covs1 <- na.omit(em_cleaned[,em_vars])
+bal.tab(em_covs1, treat = em_covs1$treated)
 ```
 ### Coarsening 1
-```{r}
-cem1_var <- c("democrat", "age", "female", "non_white","treated", "outcome")
-data1 <- na.omit(em_experiment[,cem1_var])
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+em_cem1_var <- c("treated", "female","race", "party", "congressionalDistrict",    "historyCode2016", "general12","age", "outcome")
+em_data1 <- na.omit(em_cleaned[,em_cem1_var])
 
-X_1 <- data1 %>%
-  dplyr::select(democrat, age, female, non_white, treated, outcome)
+em_X_1 <- em_data1 %>%
+  dplyr::select(treated, female,race, party, congressionalDistrict,    historyCode2016, general12)
 
-m.out.cem <- matchit(treated ~ democrat + age + female + non_white,
-                     data = data1, method = "cem")
+em_m.out.cem <- matchit(treated ~ female +
+                          race+
+                          party+
+                          congressionalDistrict+
+                          historyCode2016+
+                          general12 + 
+                          age,
+                     data = em_data1, method = "cem")
 
-bal_tab_cem <- bal.tab(m.out.cem, thresholds = c(m = 0.1), un = TRUE)
-bal_tab_cem
+em_bal_tab_cem <- bal.tab(em_m.out.cem, thresholds = c(m = 0.01), un = TRUE)
+em_bal_tab_cem
 ```
-```{r}
-lp.cem <- love.plot(
-  m.out.cem,
-  threshold = .1,
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+em_lp.cem <- love.plot(
+  em_m.out.cem,
+  threshold = .01,
   binary = 'std',
-  treat = data1$treated,
-  covs = X_1)
+  treat = em_data1$treated,
+  covs = em_X_1)
 
-lp.cem
+em_lp.cem
 ```
 ### ATT by CEM
-```{r}
-m.data.cem <- match.data(m.out.cem)
-m.data.cem
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+em_m.data.cem <- match.data(em_m.out.cem)
+head(em_m.data.cem)
 ```
 ### cem regression 
-```{r}
-lm.cem1 <- lm(outcome ~ treated, data = m.data.cem)
-summary(lm.cem1)
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+em_lm.cem1 <- lm(outcome ~ treated, data = em_m.data.cem)
+summary(em_lm.cem1)
 ```
-```{r}
-lm.cem2 <- lm(outcome ~ treated +
-                democrat +
-                age +
-                female +
-                non_white, data = m.data.cem)
-summary(lm.cem2)
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+em_lm.cem2 <- lm(outcome ~ treated + 
+                   age +
+                   female +
+                   race +
+                   party +
+                   congressionalDistrict +
+                   historyCode2016 +
+                   general12, data = em_m.data.cem)
+summary(em_lm.cem2)
 ```
 ## Genetic matching
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=TRUE}
 set.seed(1)
-m.out.gen <- matchit(treated ~ democrat + age + female + non_white, data = data1, replace = TRUE, method = "genetic")
-bal_tab_gen <- bal.tab(m.out.gen, thresholds = c(m = 0.1), un = TRUE)
-bal_tab_gen
+em_m.out.gen <- matchit(treated ~ female +
+                          race+
+                          party+
+                          congressionalDistrict+
+                          historyCode2016+
+                          general12 + 
+                          age, 
+                        data = em_data1, 
+                        replace = TRUE, 
+                        method = "genetic")
+em_bal_tab_gen <- bal.tab(em_m.out.gen, thresholds = c(m = 0.01), un = TRUE)
+em_bal_tab_gen
 ```
-```{r}
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 lp.gen <- love.plot(
   m.out.gen,
   threshold = .1,
@@ -331,12 +222,12 @@ lp.gen <- love.plot(
 lp.gen
 ```
 ## Nearest neighbour matching
-```{r}
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 m.out.nnm <- matchit(treated ~ democrat + age + female + non_white, data = data1, replace = TRUE, method = "nearest")
 bal_tab_nnm <- bal.tab(m.out.nnm, thresholds = c(m = 0.1), un = TRUE)
 bal_tab_nnm
 ```
-```{r}
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 lp.nnm <- love.plot(
   m.out.nnm,
   threshold = .1,
