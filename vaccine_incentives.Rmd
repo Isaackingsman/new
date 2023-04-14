@@ -49,6 +49,7 @@ count(vaccine_incentives, Treatment)
 ```{r Counting experimental groups by names}
 count(vaccine_incentives, Treatment2)
 ```
+
 Control: treatment1(CDC Health Information)  
 Treatment version 1: treatment2(Lottery Incentive)  
 Treatment version 2: treatment3(Cash Voucher Incentive)  
@@ -275,6 +276,30 @@ vi_lp.gen <- love.plot(
 
 vi_lp.gen
 ```
+
+#### ATT by Gen
+```{r Reproducing the dataset after Gen}
+vi_m.data.gen <- match.data(vi_m.out.gen)
+head(vi_m.data.gen)
+```
+#### Gen regression 
+```{r Basic regression after Geb}
+vi_lm.gen1 <- lm(outcome ~ treated, data = vi_m.data.gen)
+summary(vi_lm.gen1)
+```
+```{r Regression with control after Gen}
+vi_lm.gen2 <- lm(outcome ~  treated + 
+                   Female_10 +
+                   race_white_10 +
+                   race_black_10 +
+                   education_low_10 +
+                   education_medium_10 +
+                   pool_CloudResearch_10 +
+                   pool_Facebook_10 +
+                   Trumppercent +
+                   age, data = vi_m.data.gen)
+summary(vi_lm.gen2)
+```
 ### Nearest neighbour matching
 ```{r NNM}
 vi_m.out.nnm <- matchit(treated ~ Female_10 +
@@ -305,6 +330,33 @@ vi_lp.nnm <- love.plot(
 
 vi_lp.nnm
 ```
+
+#### ATT by NNM
+```{r Reproducing the dataset after NNM}
+vi_m.data.nnm <- match.data(vi_m.out.nnm)
+head(vi_m.data.nnm)
+```
+#### CEM regression 
+```{r Basic regression after NNM}
+vi_lm.nnm1 <- lm(outcome ~ treated, data = vi_m.data.nnm)
+summary(vi_lm.nnm1)
+```
+```{r Regression with control after NNM}
+vi_lm.nnm2 <- lm(outcome ~  treated + 
+                   Female_10 +
+                   race_white_10 +
+                   race_black_10 +
+                   education_low_10 +
+                   education_medium_10 +
+                   pool_CloudResearch_10 +
+                   pool_Facebook_10 +
+                   Trumppercent +
+                   age, data = vi_m.data.nnm)
+summary(vi_lm.nnm2)
+```
+
+
+
 ## Control vs Treatment 1 only (vi1)  
 ### Experimental benchmark  
 Creating a basic and preliminary estimate of the treatment effect.
@@ -469,6 +521,30 @@ vi1_lp.gen <- love.plot(
 vi1_lp.gen
 ```
 
+#### ATT by Gen
+```{r Reproducing the dataset after Gen vi1}
+vi1_m.data.gen <- match.data(vi1_m.out.gen)
+head(vi1_m.data.gen)
+```
+#### Gen regression 
+```{r Basic regression after Gen vi1}
+vi1_lm.gen1 <- lm(outcome ~ treated, data = vi1_m.data.gen)
+summary(vi1_lm.gen1)
+```
+```{r Regression with control after Gen vi1}
+vi1_lm.gen2 <- lm(outcome ~  treated + 
+                   Female_10 +
+                   race_white_10 +
+                   race_black_10 +
+                   education_low_10 +
+                   education_medium_10 +
+                   pool_CloudResearch_10 +
+                   pool_Facebook_10 +
+                   Trumppercent +
+                   age, data = vi1_m.data.gen)
+summary(vi1_lm.gen2)
+```
+
 ### Nearest neighbour matching
 ```{r vi1 NNM}
 vi1_m.out.nnm <- matchit(treated ~ Female_10 +
@@ -498,6 +574,31 @@ vi1_lp.nnm <- love.plot(
   covs = vi1_X_1)
 
 vi1_lp.nnm
+```
+
+#### ATT by NNM
+```{r Reproducing the dataset after NNM of vi1}
+vi1_m.data.nnm <- match.data(vi1_m.out.nnm)
+head(vi1_m.data.nnm)
+```
+
+#### NNM regression 
+```{r vi1 Basic regression after NNM}
+vi1_lm.nnm1 <- lm(outcome ~ treated, data = vi1_m.data.nnm)
+summary(vi1_lm.nnm1)
+```
+```{r vi1 regression with control after NNM }
+vi1_lm.nnm2 <- lm(outcome ~  treated + 
+                   Female_10 +
+                   race_white_10 +
+                   race_black_10 +
+                   education_low_10 +
+                   education_medium_10 +
+                   pool_CloudResearch_10 +
+                   pool_Facebook_10 +
+                   Trumppercent +
+                   age, data = vi1_m.data.nnm)
+summary(vi1_lm.nnm2)
 ```
 
 ## Control vs Treatment 2 only (vi2)
@@ -667,6 +768,30 @@ vi2_lp.gen <- love.plot(
 vi2_lp.gen
 ```
 
+#### ATT by Gen
+```{r Reproducing the dataset after Gen vi2}
+vi2_m.data.gen <- match.data(vi2_m.out.gen)
+head(vi2_m.data.gen)
+```
+#### Gen regression 
+```{r Basic regression after Gen 2 vi2}
+vi2_lm.gen1 <- lm(outcome ~ treated, data = vi2_m.data.gen)
+summary(vi2_lm.gen1)
+```
+```{r Regression with control after Gen vi2}
+vi2_lm.gen2 <- lm(outcome ~  treated + 
+                   Female_10 +
+                   race_white_10 +
+                   race_black_10 +
+                   education_low_10 +
+                   education_medium_10 +
+                   pool_CloudResearch_10 +
+                   pool_Facebook_10 +
+                   Trumppercent +
+                   age, data = vi2_m.data.gen)
+summary(vi2_lm.gen2)
+```
+
 ### Nearest neighbour matching
 ```{r vi2 NNM}
 vi2_m.out.nnm <- matchit(treated ~ Female_10 +
@@ -698,6 +823,32 @@ vi2_lp.nnm <- love.plot(
 vi2_lp.nnm
 ```
 
+#### ATT by NNM
+```{r Reproducing the dataset after NNM of vi2}
+vi2_m.data.nnm <- match.data(vi2_m.out.nnm)
+head(vi2_m.data.nnm)
+```
+#### NNM regression 
+```{r vi2 Basic regression after NNM}
+vi2_lm.nnm1 <- lm(outcome ~ treated, data = vi2_m.data.nnm)
+summary(vi2_lm.nnm1)
+```
+```{r vi2 regression with control after NNM }
+vi2_lm.nnm2 <- lm(outcome ~  treated + 
+                   Female_10 +
+                   race_white_10 +
+                   race_black_10 +
+                   race_other_10 +
+                   education_low_10 +
+                   education_medium_10 +
+                   education_high_10 +
+                   pool_CloudResearch_10 +
+                   pool_Facebook_10 +
+                   pool_Lucid_10 +
+                   Trumppercent +
+                   age, data = vi2_m.data.nnm)
+summary(vi2_lm.nnm2)
+```
 # To-do:
 
 matching
