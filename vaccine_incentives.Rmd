@@ -129,18 +129,13 @@ Try adding other covariates into the regression and se
 ```{r Experimental benchmark regression with control}
 model_vi_2 <- lm(outcome ~ treated + 
                    Female_10 +
-                   age_young_10 +
                    race_white_10 +
                    race_black_10 +
-                   race_other_10 +
                    education_low_10 +
                    education_medium_10 +
-                   education_high_10 +
                    pool_CloudResearch_10 +
                    pool_Facebook_10 +
-                   pool_Lucid_10 +
                    Trumppercent +
-                   Trumphi +
                    age, data = vi_cleaned)
 summary(model_vi_2)
 ```
@@ -161,7 +156,6 @@ mean(na.omit(vi_cleaned$outcome[vi_tr])) - mean(na.omit(vi_cleaned$outcome[vi_ct
 ```{r Covariate balance, message=FALSE, warning=FALSE}
 vi_covs1 <- vi_cleaned %>%
   dplyr::select(Female_10,
-                age_young_10,
                 race_white_10,
                 race_black_10,
                 race_other_10,
@@ -172,21 +166,18 @@ vi_covs1 <- vi_cleaned %>%
                 pool_Facebook_10,
                 pool_Lucid_10,
                 Trumppercent,
-                Trumphi,
                 age,
                 treated) %>%
   na.omit()
 
 bal.tab(vi_covs1, treat = vi_covs1$treated)
 ```
-### 
-Coarsened Exact Matching
+### Coarsened Exact Matching
 ```{r CEM}
 vi_data1 <- na.omit(vi_cleaned)
 
 vi_X_1 <- vi_data1 %>%
   dplyr::select(Female_10,
-                age_young_10,
                 race_white_10,
                 race_black_10,
                 race_other_10,
@@ -197,11 +188,9 @@ vi_X_1 <- vi_data1 %>%
                 pool_Facebook_10,
                 pool_Lucid_10,
                 Trumppercent,
-                Trumphi,
                 age)
 
 vi_m.out.cem <- matchit(treated ~ Female_10 +
-                   age_young_10 +
                    race_white_10 +
                    race_black_10 +
                    race_other_10 +
@@ -212,11 +201,9 @@ vi_m.out.cem <- matchit(treated ~ Female_10 +
                    pool_Facebook_10 +
                    pool_Lucid_10 +
                    Trumppercent +
-                   Trumphi +
                    age,
                    data = vi_data1,
-                   method = "cem",
-                   replace = TRUE)
+                   method = "cem")
 
 vi_bal_tab_cem <- bal.tab(vi_m.out.cem,
                        thresholds = c(m = 0.01),
@@ -233,6 +220,7 @@ vi_lp.cem <- love.plot(
 
 vi_lp.cem
 ```
+
 #### ATT by CEM
 ```{r Reproducing the dataset after CEM}
 vi_m.data.cem <- match.data(vi_m.out.cem)
@@ -246,18 +234,13 @@ summary(vi_lm.cem1)
 ```{r Regression with control after CEM}
 vi_lm.cem2 <- lm(outcome ~  treated + 
                    Female_10 +
-                   age_young_10 +
                    race_white_10 +
                    race_black_10 +
-                   race_other_10 +
                    education_low_10 +
                    education_medium_10 +
-                   education_high_10 +
                    pool_CloudResearch_10 +
                    pool_Facebook_10 +
-                   pool_Lucid_10 +
                    Trumppercent +
-                   Trumphi +
                    age, data = vi_m.data.cem)
 summary(vi_lm.cem2)
 ```
@@ -265,7 +248,6 @@ summary(vi_lm.cem2)
 ```{r Genetic matching, message=FALSE, warning=FALSE}
 set.seed(1)
 vi_m.out.gen <- matchit(treated ~ Female_10 +
-                   age_young_10 +
                    race_white_10 +
                    race_black_10 +
                    race_other_10 +
@@ -276,7 +258,6 @@ vi_m.out.gen <- matchit(treated ~ Female_10 +
                    pool_Facebook_10 +
                    pool_Lucid_10 +
                    Trumppercent +
-                   Trumphi +
                    age, 
                    data = vi_data1, 
                    replace = TRUE, 
@@ -297,7 +278,6 @@ vi_lp.gen
 ### Nearest neighbour matching
 ```{r NNM}
 vi_m.out.nnm <- matchit(treated ~ Female_10 +
-                   age_young_10 +
                    race_white_10 +
                    race_black_10 +
                    race_other_10 +
@@ -308,7 +288,6 @@ vi_m.out.nnm <- matchit(treated ~ Female_10 +
                    pool_Facebook_10 +
                    pool_Lucid_10 +
                    Trumppercent +
-                   Trumphi +
                    age, 
                    data = vi_data1, 
                    replace = TRUE, 
@@ -326,84 +305,8 @@ vi_lp.nnm <- love.plot(
 
 vi_lp.nnm
 ```
-### 1:1 distance matching
-```{r 1:1 dm}
-vi_m.out.1to1 <-
-  Match(
-    Tr = vi_data1$treated,
-    X = vi_X_1,
-    estimand = "ATT",
-    M = 1,
-    ties = TRUE,
-    replace = TRUE,
-    Weight = 2
-  )
-
-vi_bal_tab_1to1 <- bal.tab(vi_m.out.1to1, treat = vi_data1$treated, covs = vi_X_1, thresholds = c(m = 0.1), un = TRUE)
-vi_bal_tab_1to1
-```
-```{r Love plot of 1:1 dm}
-vi_lp.1to1 <- love.plot(
-  vi_m.out.1to1,
-  threshold = .1,
-  binary = 'std',
-  treat = vi_data1$treated,
-  covs = vi_X_1)
-
-vi_lp.1to1
-```
-### 1:2 distance matching
-```{r 1:2 dm}
-vi_m.out.1to2 <-
-  Match(
-    Tr = vi_data1$treated,
-    X = vi_X_1,
-    estimand = "ATT",
-    M = 2,
-    ties = TRUE,
-    replace = TRUE,
-    Weight = 2  )
-
-vi_bal_tab_1to2 <- bal.tab(vi_m.out.1to2, treat = vi_data1$treated, covs = vi_X_1, thresholds = c(m = 0.1), un = TRUE)
-vi_bal_tab_1to2
-```
-```{r Love plot of 1:2 dm}
-vi_lp.1to2 <- love.plot(
-  vi_m.out.1to2,
-  threshold = .1,
-  binary = 'std',
-  treat = vi_data1$treated,
-  covs = vi_X_1)
-
-vi_lp.1to2
-```
-### 1:3 distance matching
-```{r 1:3 dm}
-vi_m.out.1to3 <-
-  Match(
-    Tr = vi_data1$treated,
-    X = vi_X_1,
-    estimand = "ATT",
-    M = 3,
-    ties = TRUE,
-    replace = TRUE,
-    Weight = 2)
-
-vi_bal_tab_1to3 <- bal.tab(vi_m.out.1to3, treat = vi_data1$treated, covs = vi_X_1, thresholds = c(m = 0.1), un = TRUE)
-vi_bal_tab_1to3
-```
-```{r Love plot of 1:3 dm}
-vi_lp.1to3 <- love.plot(
-  vi_m.out.1to3,
-  threshold = .1,
-  binary = 'std',
-  treat = vi_data1$treated,
-  covs = vi_X_1)
-
-vi_lp.1to3
-```
-## Control vs Treatment 1 only (vi1)
-### Experimental benchmark
+## Control vs Treatment 1 only (vi1)  
+### Experimental benchmark  
 Creating a basic and preliminary estimate of the treatment effect.
 ```{r Creating a subset of control and treatment 1 only}
 vi1_cleaned <- vi_cleaned %>%
@@ -411,7 +314,6 @@ vi1_cleaned <- vi_cleaned %>%
 
 count(vi1_cleaned, Treatment_012)
 ```
-
 ```{r vi1 Experimental benchmark regression}
 model_vi1_1 <- lm(outcome ~ treated, data = vi1_cleaned)
 summary(model_vi1_1)
@@ -420,18 +322,13 @@ Try adding other covariates into the regression and see
 ```{r vi1 Experimental benchmark regression with control}
 model_vi1_2 <- lm(outcome ~ treated + 
                    Female_10 +
-                   age_young_10 +
                    race_white_10 +
                    race_black_10 +
-                   race_other_10 +
                    education_low_10 +
                    education_medium_10 +
-                   education_high_10 +
                    pool_CloudResearch_10 +
                    pool_Facebook_10 +
-                   pool_Lucid_10 +
                    Trumppercent +
-                   Trumphi +
                    age, data = vi1_cleaned)
 summary(model_vi1_2)
 ```
@@ -452,7 +349,6 @@ mean(na.omit(vi1_cleaned$outcome[vi1_tr])) - mean(na.omit(vi1_cleaned$outcome[vi
 ```{r vi1 Covariate balance,message=FALSE, warning=FALSE}
 vi1_covs1 <- vi1_cleaned %>%
   dplyr::select(Female_10,
-                age_young_10,
                 race_white_10,
                 race_black_10,
                 race_other_10,
@@ -463,7 +359,6 @@ vi1_covs1 <- vi1_cleaned %>%
                 pool_Facebook_10,
                 pool_Lucid_10,
                 Trumppercent,
-                Trumphi,
                 age,
                 treated) %>%
   na.omit()
@@ -476,7 +371,6 @@ vi1_data1 <- na.omit(vi1_cleaned)
 
 vi1_X_1 <- vi1_data1 %>%
   dplyr::select(Female_10,
-                age_young_10,
                 race_white_10,
                 race_black_10,
                 race_other_10,
@@ -487,11 +381,9 @@ vi1_X_1 <- vi1_data1 %>%
                 pool_Facebook_10,
                 pool_Lucid_10,
                 Trumppercent,
-                Trumphi,
                 age)
 
 vi1_m.out.cem <- matchit(treated ~ Female_10 +
-                   age_young_10 +
                    race_white_10 +
                    race_black_10 +
                    race_other_10 +
@@ -502,7 +394,6 @@ vi1_m.out.cem <- matchit(treated ~ Female_10 +
                    pool_Facebook_10 +
                    pool_Lucid_10 +
                    Trumppercent +
-                   Trumphi +
                    age,
                    data = vi1_data1,
                    method = "cem")
@@ -522,16 +413,34 @@ vi1_lp.cem <- love.plot(
 
 vi1_lp.cem
 ```
+
 #### ATT by CEM
 ```{r Reproducing the dataset after CEM of vi1}
 vi1_m.data.cem <- match.data(vi1_m.out.cem)
 head(vi1_m.data.cem)
 ```
+#### CEM regression 
+```{r vi1 Basic regression after CEM}
+vi1_lm.cem1 <- lm(outcome ~ treated, data = vi1_m.data.cem)
+summary(vi1_lm.cem1)
+```
+```{r vi1 regression with control after CEM }
+vi1_lm.cem2 <- lm(outcome ~  treated + 
+                   Female_10 +
+                   race_white_10 +
+                   race_black_10 +
+                   education_low_10 +
+                   education_medium_10 +
+                   pool_CloudResearch_10 +
+                   pool_Facebook_10 +
+                   Trumppercent +
+                   age, data = vi1_m.data.cem)
+summary(vi1_lm.cem2)
+```
 ### Genetic matching
 ```{r vi1 Genetic matching, message=FALSE, warning=FALSE}
 set.seed(1)
 vi1_m.out.gen <- matchit(treated ~ Female_10 +
-                   age_young_10 +
                    race_white_10 +
                    race_black_10 +
                    race_other_10 +
@@ -542,7 +451,6 @@ vi1_m.out.gen <- matchit(treated ~ Female_10 +
                    pool_Facebook_10 +
                    pool_Lucid_10 +
                    Trumppercent +
-                   Trumphi +
                    age, 
                    data = vi1_data1, 
                    replace = TRUE, 
@@ -560,10 +468,10 @@ vi1_lp.gen <- love.plot(
 
 vi1_lp.gen
 ```
+
 ### Nearest neighbour matching
 ```{r vi1 NNM}
 vi1_m.out.nnm <- matchit(treated ~ Female_10 +
-                   age_young_10 +
                    race_white_10 +
                    race_black_10 +
                    race_other_10 +
@@ -574,7 +482,6 @@ vi1_m.out.nnm <- matchit(treated ~ Female_10 +
                    pool_Facebook_10 +
                    pool_Lucid_10 +
                    Trumppercent +
-                   Trumphi +
                    age, 
                    data = vi1_data1, 
                    replace = TRUE, 
@@ -592,31 +499,9 @@ vi1_lp.nnm <- love.plot(
 
 vi1_lp.nnm
 ```
-#### CEM regression 
-```{r vi1 Basic regression after CEM}
-vi1_lm.cem1 <- lm(outcome ~ treated, data = vi1_m.data.cem)
-summary(vi1_lm.cem1)
-```
-```{r vi1 regression with control after CEM }
-vi1_lm.cem2 <- lm(outcome ~  treated + 
-                   Female_10 +
-                   age_young_10 +
-                   race_white_10 +
-                   race_black_10 +
-                   race_other_10 +
-                   education_low_10 +
-                   education_medium_10 +
-                   education_high_10 +
-                   pool_CloudResearch_10 +
-                   pool_Facebook_10 +
-                   pool_Lucid_10 +
-                   Trumppercent +
-                   Trumphi +
-                   age, data = vi1_m.data.cem)
-summary(vi1_lm.cem2)
-```
+
 ## Control vs Treatment 2 only (vi2)
-### Experimental benchmark
+### Experimental benchmark  
 Creating a basic and preliminary estimate of the treatment effect.
 ```{r Creating a subset of control and treatment 2 only}
 vi2_cleaned <- vi_cleaned %>%
@@ -624,7 +509,6 @@ vi2_cleaned <- vi_cleaned %>%
 
 count(vi2_cleaned, Treatment_012)
 ```
-
 ```{r vi2 Experimental benchmark regression}
 model_vi2_1 <- lm(outcome ~ treated, data = vi2_cleaned)
 summary(model_vi2_1)
@@ -633,18 +517,13 @@ Try adding other covariates into the regression and see
 ```{r vi2 Experimental benchmark regression with control}
 model_vi2_2 <- lm(outcome ~ treated + 
                    Female_10 +
-                   age_young_10 +
                    race_white_10 +
                    race_black_10 +
-                   race_other_10 +
                    education_low_10 +
                    education_medium_10 +
-                   education_high_10 +
                    pool_CloudResearch_10 +
                    pool_Facebook_10 +
-                   pool_Lucid_10 +
                    Trumppercent +
-                   Trumphi +
                    age, data = vi2_cleaned)
 summary(model_vi2_2)
 ```
@@ -665,7 +544,6 @@ mean(na.omit(vi2_cleaned$outcome[vi2_tr])) - mean(na.omit(vi2_cleaned$outcome[vi
 ```{r vi2 Covariate balance,message=FALSE, warning=FALSE}
 vi2_covs1 <- vi2_cleaned %>%
   dplyr::select(Female_10,
-                age_young_10,
                 race_white_10,
                 race_black_10,
                 race_other_10,
@@ -676,7 +554,6 @@ vi2_covs1 <- vi2_cleaned %>%
                 pool_Facebook_10,
                 pool_Lucid_10,
                 Trumppercent,
-                Trumphi,
                 age,
                 treated) %>%
   na.omit()
@@ -689,7 +566,6 @@ vi2_data1 <- na.omit(vi2_cleaned)
 
 vi2_X_1 <- vi2_data1 %>%
   dplyr::select(Female_10,
-                age_young_10,
                 race_white_10,
                 race_black_10,
                 race_other_10,
@@ -700,11 +576,9 @@ vi2_X_1 <- vi2_data1 %>%
                 pool_Facebook_10,
                 pool_Lucid_10,
                 Trumppercent,
-                Trumphi,
                 age)
 
 vi2_m.out.cem <- matchit(treated ~ Female_10 +
-                   age_young_10 +
                    race_white_10 +
                    race_black_10 +
                    race_other_10 +
@@ -715,7 +589,6 @@ vi2_m.out.cem <- matchit(treated ~ Female_10 +
                    pool_Facebook_10 +
                    pool_Lucid_10 +
                    Trumppercent +
-                   Trumphi +
                    age,
                    data = vi2_data1,
                    method = "cem")
@@ -735,11 +608,20 @@ vi2_lp.cem <- love.plot(
 
 vi2_lp.cem
 ```
-### Genetic matching
-```{r vi2 Genetic matching, message=FALSE, warning=FALSE}
-set.seed(1)
-vi2_m.out.gen <- matchit(treated ~ Female_10 +
-                   age_young_10 +
+
+#### ATT by CEM
+```{r Reproducing the dataset after CEM of vi2}
+vi2_m.data.cem <- match.data(vi2_m.out.cem)
+head(vi2_m.data.cem)
+```
+#### CEM regression 
+```{r vi2 Basic regression after CEM}
+vi2_lm.cem1 <- lm(outcome ~ treated, data = vi2_m.data.cem)
+summary(vi2_lm.cem1)
+```
+```{r vi2 regression with control after CEM }
+vi2_lm.cem2 <- lm(outcome ~  treated + 
+                   Female_10 +
                    race_white_10 +
                    race_black_10 +
                    race_other_10 +
@@ -750,7 +632,23 @@ vi2_m.out.gen <- matchit(treated ~ Female_10 +
                    pool_Facebook_10 +
                    pool_Lucid_10 +
                    Trumppercent +
-                   Trumphi +
+                   age, data = vi2_m.data.cem)
+summary(vi2_lm.cem2)
+```
+### Genetic matching
+```{r vi2 Genetic matching, message=FALSE, warning=FALSE}
+set.seed(1)
+vi2_m.out.gen <- matchit(treated ~ Female_10 +
+                   race_white_10 +
+                   race_black_10 +
+                   race_other_10 +
+                   education_low_10 +
+                   education_medium_10 +
+                   education_high_10 +
+                   pool_CloudResearch_10 +
+                   pool_Facebook_10 +
+                   pool_Lucid_10 +
+                   Trumppercent +
                    age, 
                    data = vi2_data1, 
                    replace = TRUE, 
@@ -768,10 +666,10 @@ vi2_lp.gen <- love.plot(
 
 vi2_lp.gen
 ```
+
 ### Nearest neighbour matching
 ```{r vi2 NNM}
 vi2_m.out.nnm <- matchit(treated ~ Female_10 +
-                   age_young_10 +
                    race_white_10 +
                    race_black_10 +
                    race_other_10 +
@@ -782,7 +680,6 @@ vi2_m.out.nnm <- matchit(treated ~ Female_10 +
                    pool_Facebook_10 +
                    pool_Lucid_10 +
                    Trumppercent +
-                   Trumphi +
                    age, 
                    data = vi2_data1, 
                    replace = TRUE, 
@@ -800,39 +697,6 @@ vi2_lp.nnm <- love.plot(
 
 vi2_lp.nnm
 ```
-#### ATT by CEM
-```{r Reproducing the dataset after CEM of vi2}
-vi2_m.data.cem <- match.data(vi2_m.out.cem)
-head(vi2_m.data.cem)
-```
-#### CEM regression 
-```{r vi2 Basic regression after CEM}
-vi2_lm.cem1 <- lm(outcome ~ treated, data = vi2_m.data.cem)
-summary(vi2_lm.cem1)
-```
-```{r vi2 regression with control after CEM }
-vi2_lm.cem2 <- lm(outcome ~  treated + 
-                   Female_10 +
-                   age_young_10 +
-                   race_white_10 +
-                   race_black_10 +
-                   race_other_10 +
-                   education_low_10 +
-                   education_medium_10 +
-                   education_high_10 +
-                   pool_CloudResearch_10 +
-                   pool_Facebook_10 +
-                   pool_Lucid_10 +
-                   Trumppercent +
-                   Trumphi +
-                   age, data = vi2_m.data.cem)
-summary(vi2_lm.cem2)
-```
-
-
-
-
-
 
 # To-do:
 

@@ -103,8 +103,8 @@ em_cleaned %>%
          non_white= factor(non_white)) %>%
   summary()
 ```
-## Control vs Treatment 1
-###Experimental benchmark
+## Control vs Treatment
+### Experimental benchmark
 Creating a basic and preliminary estimate of the treatment effect.
 ```{r Experimental benchmark by regression,message=FALSE, warning=FALSE, paged.print=TRUE}
 model_em_1 <- lm(outcome ~ treated, data = em_cleaned)
@@ -123,7 +123,7 @@ model_em_2 <- lm(outcome ~ treated +
 summary(model_em_2)
 ```
 ### Matching preparation
-```{r CEM preparation message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r CEM preparation ,message=FALSE, warning=FALSE, paged.print=TRUE}
 em_tr <- which(em_cleaned$treated == 1)
 em_ct <- which(em_cleaned$treated == 0)
 em_ntr <- length(em_tr)
@@ -132,17 +132,17 @@ em_nct <- length(em_ct)
 em_nct
 ```
 ### Basic estimate
-```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r Basic estimate, message=FALSE, warning=FALSE, paged.print=TRUE}
 mean(na.omit(em_cleaned$outcome[em_tr])) - mean(na.omit(em_cleaned$outcome[em_ct]))
 ```
 ### Covariate balance
-```{r message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r Covariate balance, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_vars <- c("treated", "female","race", "party", "congressionalDistrict",    "historyCode2016", "general12", "age")
 em_covs1 <- na.omit(em_cleaned[,em_vars])
 bal.tab(em_covs1, treat = em_covs1$treated)
 ```
 ### Coarsened Exact Matching
-```{r CEM,message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r CEM , message=FALSE, warning=FALSE, paged.print=TRUE}
 em_cem1_var <- c("treated", "female","race", "party", "congressionalDistrict",    "historyCode2016", "general12","age", "outcome")
 em_data1 <- na.omit(em_cleaned[,em_cem1_var])
 
@@ -171,12 +171,12 @@ em_lp.cem <- love.plot(
 
 em_lp.cem
 ```
-### ATT by CEM
+#### ATT by CEM
 ```{r Reproducing the dataset after CEM,message=FALSE, warning=FALSE, paged.print=TRUE}
 em_m.data.cem <- match.data(em_m.out.cem)
 head(em_m.data.cem)
 ```
-### CEM regression
+#### CEM regression
 ```{r Basic regression after CEM, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_lm.cem1 <- lm(outcome ~ treated, data = em_m.data.cem)
 summary(em_lm.cem1)
@@ -192,7 +192,7 @@ em_lm.cem2 <- lm(outcome ~ treated +
                    general12, data = em_m.data.cem)
 summary(em_lm.cem2)
 ```
-## Genetic matching
+### Genetic matching
 ```{r Genetic matching, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 set.seed(1)
 em_m.out.gen <- matchit(treated ~ female +
@@ -209,17 +209,16 @@ em_bal_tab_gen <- bal.tab(em_m.out.gen, thresholds = c(m = 0.01), un = TRUE)
 em_bal_tab_gen
 ```
 ```{r Love plot after genetic matching, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
-lp.gen <- love.plot(
+em_lp.gen <- love.plot(
   m.out.gen,
   threshold = .1,
   binary = 'std',
-  treat = data11$past_pkpres,
-  covs = X_11
-)
+  treat = em_data1$treated,
+  covs = em_X_1)
 
-lp.gen
+em_lp.gen
 ```
-## Nearest neighbour matching
+### Nearest neighbour matching
 ```{r NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_m.out.nnm <- matchit(treated ~ female +
                           race+
@@ -246,6 +245,151 @@ em_lp.nnm <- love.plot(
 em_lp.nnm
 ```
 
+## Control vs Treatment 1 (em1)  
+### Experimental benchmark  
+Creating a basic and preliminary estimate of the treatment effect.
+```{r Experimental benchmark by regression of em1 ,message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_cleaned <- em_cleaned %>%
+  filter(treat < 2)
+
+model_em1_1 <- lm(outcome ~ treated, data = em1_cleaned)
+summary(model_em1_1)
+```
+Try adding other covariates into the regression and see
+```{r Experimental benchmark by regression with control of em1 ,message=FALSE, warning=FALSE, paged.print=TRUE}
+model_em1_2 <- lm(outcome ~ treated + 
+                   age +
+                   female +
+                   race +
+                   party +
+                   congressionalDistrict +
+                   historyCode2016 +
+                   general12, data = em_cleaned)
+summary(model_em1_2)
+```
+### Matching preparation
+```{r em1 CEM preparation ,message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_tr <- which(em1_cleaned$treated == 1)
+em1_ct <- which(em1_cleaned$treated == 0)
+em1_ntr <- length(em1_tr)
+em1_ntr
+em1_nct <- length(em1_ct)
+em1_nct
+```
+### Basic estimate
+```{r Basic estimate of em1, message=FALSE, warning=FALSE, paged.print=TRUE}
+mean(na.omit(em1_cleaned$outcome[em1_tr])) - mean(na.omit(em1_cleaned$outcome[em1_ct]))
+```
+### Covariate balance
+```{r Covariate balance of em1,message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_vars <- c("treated", "female","race", "party", "congressionalDistrict", "historyCode2016", "general12", "age")
+em1_covs1 <- na.omit(em1_cleaned[,em1_vars])
+bal.tab(em1_covs1, treat = em1_covs1$treated)
+```
+### Coarsened Exact Matching
+```{r em1 CEM,message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_cem1_var <- c("treated", "female","race", "party", "congressionalDistrict",    "historyCode2016", "general12","age", "outcome")
+em1_data1 <- na.omit(em1_cleaned[,em1_cem1_var])
+
+em1_X_1 <- em1_data1 %>%
+  dplyr::select(treated, female,race, party, congressionalDistrict,    historyCode2016, general12)
+
+em1_m.out.cem <- matchit(treated ~ female +
+                          race+
+                          party+
+                          congressionalDistrict+
+                          historyCode2016+
+                          general12 + 
+                          age,
+                     data = em1_data1, method = "cem")
+
+em1_bal_tab_cem <- bal.tab(em1_m.out.cem, thresholds = c(m = 0.01), un = TRUE)
+em1_bal_tab_cem
+```
+```{r Love plot after CEM em1 ,message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_lp.cem <- love.plot(
+  em1_m.out.cem,
+  threshold = .01,
+  binary = 'std',
+  treat = em1_data1$treated,
+  covs = em1_X_1)
+
+em1_lp.cem
+```
+### ATT by CEM
+```{r Reproducing the dataset after CEM em1,message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_m.data.cem <- match.data(em1_m.out.cem)
+head(em1_m.data.cem)
+```
+### CEM regression
+```{r Basic regression after CEM em1, message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_lm.cem1 <- lm(outcome ~ treated, data = em1_m.data.cem)
+summary(em1_lm.cem1)
+```
+```{r Regression with control after CEM em1, message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_lm.cem2 <- lm(outcome ~ treated + 
+                   age +
+                   female +
+                   race +
+                   party +
+                   congressionalDistrict +
+                   historyCode2016 +
+                   general12, data = em1_m.data.cem)
+summary(em1_lm.cem2)
+```
+## Genetic matching
+```{r Genetic matching em1, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+set.seed(1)
+em1_m.out.gen <- matchit(treated ~ female +
+                          race+
+                          party+
+                          congressionalDistrict+
+                          historyCode2016+
+                          general12 + 
+                          age, 
+                        data = em1_data1, 
+                        replace = TRUE, 
+                        method = "genetic")
+em1_bal_tab_gen <- bal.tab(em1_m.out.gen, thresholds = c(m = 0.01), un = TRUE)
+em1_bal_tab_gen
+```
+```{r Love plot after genetic matching em1, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+em1_lp.gen <- love.plot(
+  m.out.gen,
+  threshold = .1,
+  binary = 'std',
+  treat = em1_data1$treated,
+  covs = em1_X_1
+)
+
+em1_lp.gen
+```
+## Nearest neighbour matching
+```{r NNM em1, message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_m.out.nnm <- matchit(treated ~ female +
+                          race+
+                          party+
+                          congressionalDistrict+
+                          historyCode2016+
+                          general12 + 
+                          age, 
+                        data = em1_data1, 
+                        replace = TRUE, 
+                        method = "nearest")
+em1_bal_tab_nnm <- bal.tab(em1_m.out.nnm, thresholds = c(m = 0.01), un = TRUE)
+em1_bal_tab_nnm
+```
+```{r Love plot after NNM em1, message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_lp.nnm <- love.plot(
+  em1_m.out.nnm,
+  threshold = .01,
+  binary = 'std',
+  treat = em1_data1$treated,
+  covs = em1_X_1
+)
+
+em1_lp.nnm
+```
 # To-do:
 
 matching
