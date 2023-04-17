@@ -1026,8 +1026,8 @@ head(vi_m.data.nnm)</code></pre>
 ## #   Trumphi &lt;dbl&gt;, age &lt;dbl&gt;, outcome &lt;dbl&gt;, treated &lt;dbl&gt;, distance &lt;dbl&gt;,
 ## #   weights &lt;dbl&gt;</code></pre>
 </div>
-<div id="cem-regression-1" class="section level4">
-<h4>CEM regression</h4>
+<div id="nnm-regression" class="section level4">
+<h4>NNM regression</h4>
 <pre class="r"><code>vi_lm.nnm1 &lt;- lm(outcome ~ treated, data = vi_m.data.nnm)
 summary(vi_lm.nnm1)</code></pre>
 <pre><code>## 
@@ -1321,7 +1321,7 @@ head(vi1_m.data.cem)</code></pre>
 ## #   Trumphi &lt;dbl&gt;, age &lt;dbl&gt;, outcome &lt;dbl&gt;, treated &lt;dbl&gt;, weights &lt;dbl&gt;,
 ## #   subclass &lt;fct&gt;</code></pre>
 </div>
-<div id="cem-regression-2" class="section level4">
+<div id="cem-regression-1" class="section level4">
 <h4>CEM regression</h4>
 <pre class="r"><code>vi1_lm.cem1 &lt;- lm(outcome ~ treated, data = vi1_m.data.cem)
 summary(vi1_lm.cem1)</code></pre>
@@ -1606,7 +1606,7 @@ head(vi1_m.data.nnm)</code></pre>
 ## #   Trumphi &lt;dbl&gt;, age &lt;dbl&gt;, outcome &lt;dbl&gt;, treated &lt;dbl&gt;, distance &lt;dbl&gt;,
 ## #   weights &lt;dbl&gt;</code></pre>
 </div>
-<div id="nnm-regression" class="section level4">
+<div id="nnm-regression-1" class="section level4">
 <h4>NNM regression</h4>
 <pre class="r"><code>vi1_lm.nnm1 &lt;- lm(outcome ~ treated, data = vi1_m.data.nnm)
 summary(vi1_lm.nnm1)</code></pre>
@@ -1901,7 +1901,7 @@ head(vi2_m.data.cem)</code></pre>
 ## #   Trumphi &lt;dbl&gt;, age &lt;dbl&gt;, outcome &lt;dbl&gt;, treated &lt;dbl&gt;, weights &lt;dbl&gt;,
 ## #   subclass &lt;fct&gt;</code></pre>
 </div>
-<div id="cem-regression-3" class="section level4">
+<div id="cem-regression-2" class="section level4">
 <h4>CEM regression</h4>
 <pre class="r"><code>vi2_lm.cem1 &lt;- lm(outcome ~ treated, data = vi2_m.data.cem)
 summary(vi2_lm.cem1)</code></pre>
@@ -1927,41 +1927,35 @@ summary(vi2_lm.cem1)</code></pre>
                    Female_10 +
                    race_white_10 +
                    race_black_10 +
-                   race_other_10 +
                    education_low_10 +
                    education_medium_10 +
-                   education_high_10 +
                    pool_CloudResearch_10 +
                    pool_Facebook_10 +
-                   pool_Lucid_10 +
                    Trumppercent +
                    age, data = vi2_m.data.cem)
 summary(vi2_lm.cem2)</code></pre>
 <pre><code>## 
 ## Call:
 ## lm(formula = outcome ~ treated + Female_10 + race_white_10 + 
-##     race_black_10 + race_other_10 + education_low_10 + education_medium_10 + 
-##     education_high_10 + pool_CloudResearch_10 + pool_Facebook_10 + 
-##     pool_Lucid_10 + Trumppercent + age, data = vi2_m.data.cem)
+##     race_black_10 + education_low_10 + education_medium_10 + 
+##     pool_CloudResearch_10 + pool_Facebook_10 + Trumppercent + 
+##     age, data = vi2_m.data.cem)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
 ## -0.48913 -0.20683 -0.15520 -0.07314  0.95473 
 ## 
-## Coefficients: (3 not defined because of singularities)
+## Coefficients:
 ##                         Estimate Std. Error t value Pr(&gt;|t|)  
 ## (Intercept)            8.491e-02  2.236e-01   0.380   0.7043  
 ## treated                7.215e-02  3.106e-02   2.323   0.0205 *
 ## Female_10              7.969e-03  3.570e-02   0.223   0.8234  
 ## race_white_10         -3.548e-01  1.912e-01  -1.856   0.0640 .
 ## race_black_10         -3.348e-01  1.961e-01  -1.707   0.0883 .
-## race_other_10                 NA         NA      NA       NA  
 ## education_low_10       9.758e-02  5.814e-02   1.679   0.0938 .
 ## education_medium_10    3.936e-02  5.760e-02   0.683   0.4946  
-## education_high_10             NA         NA      NA       NA  
 ## pool_CloudResearch_10  1.494e-01  9.342e-02   1.599   0.1103  
 ## pool_Facebook_10      -6.366e-02  2.813e-01  -0.226   0.8210  
-## pool_Lucid_10                 NA         NA      NA       NA  
 ## Trumppercent           1.431e-16  1.047e-16   1.367   0.1722  
 ## age                    3.328e-03  1.335e-03   2.494   0.0129 *
 ## ---
@@ -2194,7 +2188,7 @@ head(vi2_m.data.nnm)</code></pre>
 ## #   Trumphi &lt;dbl&gt;, age &lt;dbl&gt;, outcome &lt;dbl&gt;, treated &lt;dbl&gt;, distance &lt;dbl&gt;,
 ## #   weights &lt;dbl&gt;</code></pre>
 </div>
-<div id="nnm-regression-1" class="section level4">
+<div id="nnm-regression-2" class="section level4">
 <h4>NNM regression</h4>
 <pre class="r"><code>vi2_lm.nnm1 &lt;- lm(outcome ~ treated, data = vi2_m.data.nnm)
 summary(vi2_lm.nnm1)</code></pre>
@@ -2220,41 +2214,35 @@ summary(vi2_lm.nnm1)</code></pre>
                    Female_10 +
                    race_white_10 +
                    race_black_10 +
-                   race_other_10 +
                    education_low_10 +
                    education_medium_10 +
-                   education_high_10 +
                    pool_CloudResearch_10 +
                    pool_Facebook_10 +
-                   pool_Lucid_10 +
                    Trumppercent +
                    age, data = vi2_m.data.nnm)
 summary(vi2_lm.nnm2)</code></pre>
 <pre><code>## 
 ## Call:
 ## lm(formula = outcome ~ treated + Female_10 + race_white_10 + 
-##     race_black_10 + race_other_10 + education_low_10 + education_medium_10 + 
-##     education_high_10 + pool_CloudResearch_10 + pool_Facebook_10 + 
-##     pool_Lucid_10 + Trumppercent + age, data = vi2_m.data.nnm)
+##     race_black_10 + education_low_10 + education_medium_10 + 
+##     pool_CloudResearch_10 + pool_Facebook_10 + Trumppercent + 
+##     age, data = vi2_m.data.nnm)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
 ## -0.47810 -0.21597 -0.16957 -0.06068  0.94161 
 ## 
-## Coefficients: (3 not defined because of singularities)
+## Coefficients:
 ##                         Estimate Std. Error t value Pr(&gt;|t|)    
 ## (Intercept)           -1.743e-01  9.689e-02  -1.799 0.072417 .  
 ## treated                7.352e-02  2.836e-02   2.592 0.009714 ** 
 ## Female_10              1.676e-02  2.918e-02   0.574 0.565984    
 ## race_white_10         -3.700e-03  5.354e-02  -0.069 0.944921    
 ## race_black_10          4.692e-03  6.088e-02   0.077 0.938596    
-## race_other_10                 NA         NA      NA       NA    
 ## education_low_10       5.910e-02  4.227e-02   1.398 0.162501    
 ## education_medium_10   -1.821e-02  4.145e-02  -0.439 0.660619    
-## education_high_10             NA         NA      NA       NA    
 ## pool_CloudResearch_10  1.767e-01  5.195e-02   3.402 0.000701 ***
 ## pool_Facebook_10       3.862e-01  9.193e-02   4.201 2.96e-05 ***
-## pool_Lucid_10                 NA         NA      NA       NA    
 ## Trumppercent           9.099e-17  8.290e-17   1.098 0.272738    
 ## age                    2.040e-03  1.039e-03   1.962 0.050066 .  
 ## ---

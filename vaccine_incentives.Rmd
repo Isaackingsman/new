@@ -3,9 +3,9 @@ title: "MidtermReport"
 author: "Lee Che Yuet Isaac"
 date: "3/31/2023"
 output:
-  html_document: default
-  pdf_document: default
   word_document: default
+  pdf_document: default
+  html_document: default
 ---
 # Progress so far
 
@@ -336,7 +336,7 @@ vi_lp.nnm
 vi_m.data.nnm <- match.data(vi_m.out.nnm)
 head(vi_m.data.nnm)
 ```
-#### CEM regression 
+#### NNM regression 
 ```{r Basic regression after NNM}
 vi_lm.nnm1 <- lm(outcome ~ treated, data = vi_m.data.nnm)
 summary(vi_lm.nnm1)
@@ -725,13 +725,10 @@ vi2_lm.cem2 <- lm(outcome ~  treated +
                    Female_10 +
                    race_white_10 +
                    race_black_10 +
-                   race_other_10 +
                    education_low_10 +
                    education_medium_10 +
-                   education_high_10 +
                    pool_CloudResearch_10 +
                    pool_Facebook_10 +
-                   pool_Lucid_10 +
                    Trumppercent +
                    age, data = vi2_m.data.cem)
 summary(vi2_lm.cem2)
@@ -838,13 +835,10 @@ vi2_lm.nnm2 <- lm(outcome ~  treated +
                    Female_10 +
                    race_white_10 +
                    race_black_10 +
-                   race_other_10 +
                    education_low_10 +
                    education_medium_10 +
-                   education_high_10 +
                    pool_CloudResearch_10 +
                    pool_Facebook_10 +
-                   pool_Lucid_10 +
                    Trumppercent +
                    age, data = vi2_m.data.nnm)
 summary(vi2_lm.nnm2)
