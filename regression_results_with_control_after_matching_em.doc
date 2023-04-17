@@ -1,0 +1,76 @@
+
+<table style="text-align:center"><caption><strong>Regression with control results after matching em</strong></caption>
+<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td colspan="4"><em>Dependent variable:</em></td></tr>
+<tr><td></td><td colspan="4" style="border-bottom: 1px solid black"></td></tr>
+<tr><td style="text-align:left"></td><td colspan="4">outcome</td></tr>
+<tr><td style="text-align:left"></td><td>(1)</td><td>(2)</td><td>(3)</td><td>(4)</td></tr>
+<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Constant</td><td>1.0000<sup>***</sup></td><td>1.0000<sup>***</sup></td><td>1.0000<sup>***</sup></td><td>1.0000<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">treated</td><td>0.0000</td><td>-0.0000<sup>***</sup></td><td>-0.0000<sup>***</sup></td><td>0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">age</td><td>0.0000<sup>**</sup></td><td>-0.0000<sup>***</sup></td><td>0.0000<sup>**</sup></td><td>-0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">female</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>-0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">race</td><td>0.0000</td><td>-0.0000</td><td>-0.0000</td><td>0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">partyCPF</td><td>-0.0000</td><td></td><td></td><td>0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td></td><td></td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">partyDEM</td><td>0.0000</td><td></td><td></td><td>0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td></td><td></td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">partyECO</td><td>-0.0000</td><td></td><td></td><td>0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td></td><td></td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">partyGRE</td><td>-0.0000</td><td>-0.0000</td><td></td><td>0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td></td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">partyIND</td><td>-0.0000</td><td>0.0000</td><td></td><td>0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td></td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">partyLPF</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">partyNPA</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td><td>0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">partyPSL</td><td>0.0000</td><td></td><td></td><td>0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td></td><td></td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">partyREF</td><td>-0.0000</td><td>0.0000</td><td></td><td>0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td></td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">partyREP</td><td>-0.0000</td><td>0.0000<sup>*</sup></td><td>0.0000</td><td>-0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">congressionalDistrict</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>-0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">historyCode2016B</td><td>0.0000</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">historyCode2016N</td><td>-1.0000<sup>***</sup></td><td>-1.0000<sup>***</sup></td><td>-1.0000<sup>***</sup></td><td>-1.0000<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">historyCode2016P</td><td>-0.0000</td><td></td><td></td><td>0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td></td><td></td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">historyCode2016Y</td><td>-0.0000</td><td>0.0000</td><td>-0.0000</td><td>-0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">general12</td><td>0.0000</td><td>-0.0000</td><td>0.0000</td><td>0.0000</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td><td>(0.0000)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Observations</td><td>276,470</td><td>236,156</td><td>157,992</td><td>266,459</td></tr>
+<tr><td style="text-align:left">R<sup>2</sup></td><td>1.0000</td><td>1.0000</td><td>1.0000</td><td>1.0000</td></tr>
+<tr><td style="text-align:left">Adjusted R<sup>2</sup></td><td>1.0000</td><td>1.0000</td><td>1.0000</td><td>1.0000</td></tr>
+<tr><td style="text-align:left">Residual Std. Error</td><td>0.0000 (df = 276449)</td><td>0.0000 (df = 236140)</td><td>0.0000 (df = 157979)</td><td>0.0000 (df = 266438)</td></tr>
+<tr><td style="text-align:left">F Statistic</td><td>55,359,882,924,522,172,520,626,624.0000<sup>***</sup> (df = 20; 276449)</td><td>46,085,508,287,993,972,504,448,280.0000<sup>***</sup> (df = 15; 236140)</td><td>31,100,464,773,945,157,380,266,400.0000<sup>***</sup> (df = 12; 157979)</td><td>75,902,890,315,728,987,944,446,468.0000<sup>***</sup> (df = 20; 266438)</td></tr>
+<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"><em>Note:</em></td><td colspan="4" style="text-align:right"><sup>*</sup>p<0.1; <sup>**</sup>p<0.05; <sup>***</sup>p<0.01</td></tr>
+</table>

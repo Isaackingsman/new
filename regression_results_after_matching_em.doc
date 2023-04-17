@@ -1,0 +1,19 @@
+
+<table style="text-align:center"><caption><strong>Regression results after matching em</strong></caption>
+<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td colspan="4"><em>Dependent variable:</em></td></tr>
+<tr><td></td><td colspan="4" style="border-bottom: 1px solid black"></td></tr>
+<tr><td style="text-align:left"></td><td colspan="4">outcome</td></tr>
+<tr><td style="text-align:left"></td><td>(1)</td><td>(2)</td><td>(3)</td><td>(4)</td></tr>
+<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Constant</td><td>0.7653<sup>***</sup></td><td>0.9317<sup>***</sup></td><td>0.9566<sup>***</sup></td><td>0.9185<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.0016)</td><td>(0.0010)</td><td>(0.0008)</td><td>(0.0013)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">treated</td><td>-0.0051<sup>***</sup></td><td>0.0172<sup>***</sup></td><td>0.0191<sup>***</sup></td><td>0.0006</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0018)</td><td>(0.0011)</td><td>(0.0010)</td><td>(0.0014)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
+<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Observations</td><td>334,002</td><td>236,156</td><td>157,992</td><td>266,459</td></tr>
+<tr><td style="text-align:left">R<sup>2</sup></td><td>0.00002</td><td>0.0010</td><td>0.0025</td><td>0.000001</td></tr>
+<tr><td style="text-align:left">Adjusted R<sup>2</sup></td><td>0.00002</td><td>0.0010</td><td>0.0025</td><td>-0.000003</td></tr>
+<tr><td style="text-align:left">Residual Std. Error</td><td>0.4263 (df = 334000)</td><td>0.2276 (df = 236154)</td><td>0.1693 (df = 157990)</td><td>0.2730 (df = 266457)</td></tr>
+<tr><td style="text-align:left">F Statistic</td><td>7.6106<sup>***</sup> (df = 1; 334000)</td><td>232.1456<sup>***</sup> (df = 1; 236154)</td><td>401.3233<sup>***</sup> (df = 1; 157990)</td><td>0.1655 (df = 1; 266457)</td></tr>
+<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"><em>Note:</em></td><td colspan="4" style="text-align:right"><sup>*</sup>p<0.1; <sup>**</sup>p<0.05; <sup>***</sup>p<0.01</td></tr>
+</table>
