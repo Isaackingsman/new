@@ -3,9 +3,9 @@ title: "MidtermReport"
 author: "Lee Che Yuet Isaac"
 date: "3/31/2023"
 output:
-  word_document: default
-  pdf_document: default
   html_document: default
+  pdf_document: default
+  word_document: default
 ---
 # Progress so far
 
@@ -15,9 +15,11 @@ Preparation for the datasets are almost done, then can be moved on to the matchi
 
 
 # Initialization
-```{r Initialization, results = 'hide', message = FALSE}
-rm(list=ls())
-gc()
+```{r working directory setting and clearing environment, results = 'hide', message = FALSE}
+#getwd()
+#setwd()
+#rm(list=ls())
+#gc()
 ```
 ```{r Loading packages ,message=FALSE, warning=FALSE, include=FALSE}
 # required packages
@@ -245,10 +247,10 @@ vi_lm.cem2 <- lm(outcome ~  treated +
                    age, data = vi_m.data.cem)
 summary(vi_lm.cem2)
 ```
-### Genetic matching
-```{r Genetic matching, message=FALSE, warning=FALSE}
+### Exact matching
+```{r exact matching, message=FALSE, warning=FALSE}
 set.seed(1)
-vi_m.out.gen <- matchit(treated ~ Female_10 +
+vi_m.out.exa <- matchit(treated ~ Female_10 +
                    race_white_10 +
                    race_black_10 +
                    race_other_10 +
@@ -262,33 +264,33 @@ vi_m.out.gen <- matchit(treated ~ Female_10 +
                    age, 
                    data = vi_data1, 
                    replace = TRUE, 
-                   method = "genetic")
-vi_bal_tab_gen <- bal.tab(vi_m.out.gen, thresholds = c(m = 0.01), un = TRUE)
-vi_bal_tab_gen
+                   method = "exact")
+vi_bal_tab_exa <- bal.tab(vi_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
+vi_bal_tab_exa
 ```
-```{r Love plot of genetic matching}
-vi_lp.gen <- love.plot(
-  vi_m.out.gen,
+```{r Love plot of exact matching}
+vi_lp.exa <- love.plot(
+  vi_m.out.exa,
   threshold = .01,
   binary = 'std',
   treat = vi_data1$treated,
   covs = vi_X_1)
 
-vi_lp.gen
+vi_lp.exa
 ```
 
-#### ATT by Gen
-```{r Reproducing the dataset after Gen}
-vi_m.data.gen <- match.data(vi_m.out.gen)
-head(vi_m.data.gen)
+#### ATT by exact
+```{r Reproducing the dataset after exact}
+vi_m.data.exa <- match.data(vi_m.out.exa)
+head(vi_m.data.exa)
 ```
-#### Gen regression 
+#### exact regression 
 ```{r Basic regression after Geb}
-vi_lm.gen1 <- lm(outcome ~ treated, data = vi_m.data.gen)
-summary(vi_lm.gen1)
+vi_lm.exa1 <- lm(outcome ~ treated, data = vi_m.data.exa)
+summary(vi_lm.exa1)
 ```
-```{r Regression with control after Gen}
-vi_lm.gen2 <- lm(outcome ~  treated + 
+```{r Regression with control after exact}
+vi_lm.exa2 <- lm(outcome ~  treated + 
                    Female_10 +
                    race_white_10 +
                    race_black_10 +
@@ -297,8 +299,8 @@ vi_lm.gen2 <- lm(outcome ~  treated +
                    pool_CloudResearch_10 +
                    pool_Facebook_10 +
                    Trumppercent +
-                   age, data = vi_m.data.gen)
-summary(vi_lm.gen2)
+                   age, data = vi_m.data.exa)
+summary(vi_lm.exa2)
 ```
 ### Nearest neighbour matching
 ```{r NNM}
@@ -355,7 +357,47 @@ vi_lm.nnm2 <- lm(outcome ~  treated +
 summary(vi_lm.nnm2)
 ```
 
+### Comparing the ATT results from different matching
+```{r Generating vi regression results after matching, message=FALSE, warning=FALSE}
+# export regression result
+stargazer(model_vi_1, vi_lm.cem1, vi_lm.exa1, vi_lm.nnm1, 
+          type="text",
+          title="Regression results after matching vi",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+```{r Generating vi regression results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+# export regression result
+stargazer(model_vi_1, vi_lm.cem1, vi_lm.exa1, vi_lm.nnm1, 
+          type="html",
+          title="Regression results after matching vi",
+          out="regression_results_after_matching_vi.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
 
+### Comparing the regression with control results from different matching
+```{r Generating vi regression with control results after matching, message=FALSE, warning=FALSE, paged.print=TRUE}
+# export regression result
+stargazer(model_vi_2, vi_lm.cem2, vi_lm.exa2, vi_lm.nnm2, 
+          type="text",
+          title="Regression with control results after matching vi",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+```{r Generating vi regression with control results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+# export regression result
+stargazer(model_vi_2, vi_lm.cem2, vi_lm.exa2, vi_lm.nnm2, 
+          type="html",
+          title="Regression with control results after matching vi",
+          out="regression_results_with_control_after_matching_vi.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
 
 ## Control vs Treatment 1 only (vi1)  
 ### Experimental benchmark  
@@ -489,10 +531,11 @@ vi1_lm.cem2 <- lm(outcome ~  treated +
                    age, data = vi1_m.data.cem)
 summary(vi1_lm.cem2)
 ```
-### Genetic matching
-```{r vi1 Genetic matching, message=FALSE, warning=FALSE}
+
+### Exact matching
+```{r vi1 EXA matching, message=FALSE, warning=FALSE}
 set.seed(1)
-vi1_m.out.gen <- matchit(treated ~ Female_10 +
+vi1_m.out.exa <- matchit(treated ~ Female_10 +
                    race_white_10 +
                    race_black_10 +
                    race_other_10 +
@@ -506,33 +549,33 @@ vi1_m.out.gen <- matchit(treated ~ Female_10 +
                    age, 
                    data = vi1_data1, 
                    replace = TRUE, 
-                   method = "genetic")
-vi1_bal_tab_gen <- bal.tab(vi1_m.out.gen, thresholds = c(m = 0.01), un = TRUE)
-vi1_bal_tab_gen
+                   method = "exact")
+vi1_bal_tab_exa <- bal.tab(vi1_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
+vi1_bal_tab_exa
 ```
-```{r Love plot of vi1 genetic matching}
-vi1_lp.gen <- love.plot(
-  vi1_m.out.gen,
+```{r Love plot of vi1 exact matching}
+vi1_lp.exa <- love.plot(
+  vi1_m.out.exa,
   threshold = .01,
   binary = 'std',
   treat = vi1_data1$treated,
   covs = vi1_X_1)
 
-vi1_lp.gen
+vi1_lp.exa
 ```
 
-#### ATT by Gen
-```{r Reproducing the dataset after Gen vi1}
-vi1_m.data.gen <- match.data(vi1_m.out.gen)
-head(vi1_m.data.gen)
+#### ATT by Exa
+```{r Reproducing the dataset after Exa vi1}
+vi1_m.data.exa <- match.data(vi1_m.out.exa)
+head(vi1_m.data.exa)
 ```
-#### Gen regression 
-```{r Basic regression after Gen vi1}
-vi1_lm.gen1 <- lm(outcome ~ treated, data = vi1_m.data.gen)
-summary(vi1_lm.gen1)
+#### Exa regression 
+```{r Basic regression after Exa vi1}
+vi1_lm.exa1 <- lm(outcome ~ treated, data = vi1_m.data.exa)
+summary(vi1_lm.exa1)
 ```
-```{r Regression with control after Gen vi1}
-vi1_lm.gen2 <- lm(outcome ~  treated + 
+```{r Regression with control after Exa vi1}
+vi1_lm.exa2 <- lm(outcome ~  treated + 
                    Female_10 +
                    race_white_10 +
                    race_black_10 +
@@ -541,8 +584,8 @@ vi1_lm.gen2 <- lm(outcome ~  treated +
                    pool_CloudResearch_10 +
                    pool_Facebook_10 +
                    Trumppercent +
-                   age, data = vi1_m.data.gen)
-summary(vi1_lm.gen2)
+                   age, data = vi1_m.data.exa)
+summary(vi1_lm.exa2)
 ```
 
 ### Nearest neighbour matching
@@ -600,6 +643,48 @@ vi1_lm.nnm2 <- lm(outcome ~  treated +
                    age, data = vi1_m.data.nnm)
 summary(vi1_lm.nnm2)
 ```
+### Comparing the ATT results from different matching
+```{r Generating vi1 regression results after matching, message=FALSE, warning=FALSE}
+# export regression result
+stargazer(model_vi1_1, vi1_lm.cem1, vi1_lm.exa1, vi1_lm.nnm1, 
+          type="text",
+          title="Regression results after matching vi1",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+```{r Generating vi1 regression results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+# export regression result
+stargazer(model_vi1_1, vi1_lm.cem1, vi1_lm.exa1, vi1_lm.nnm1, 
+          type="html",
+          title="Regression results after matching vi1",
+          out="regression_results_after_matching_vi1.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+
+### Comparing the regression with control results from different matching
+```{r Generating vi1 regression with control results after matching, message=FALSE, warning=FALSE, paged.print=TRUE}
+# export regression result
+stargazer(model_vi1_2, vi1_lm.cem2, vi1_lm.exa2, vi1_lm.nnm2, 
+          type="text",
+          title="Regression with control results after matching vi1",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+```{r Generating v1i regression with control results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+# export regression result
+stargazer(model_vi1_2, vi1_lm.cem2, vi1_lm.exa2, vi1_lm.nnm2, 
+          type="html",
+          title="Regression with control results after matching vi1",
+          out="regression_results_with_control_after_matching_vi1.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+
 
 ## Control vs Treatment 2 only (vi2)
 ### Experimental benchmark  
@@ -733,10 +818,10 @@ vi2_lm.cem2 <- lm(outcome ~  treated +
                    age, data = vi2_m.data.cem)
 summary(vi2_lm.cem2)
 ```
-### Genetic matching
-```{r vi2 Genetic matching, message=FALSE, warning=FALSE}
+### exact matching
+```{r vi2 exact matching, message=FALSE, warning=FALSE}
 set.seed(1)
-vi2_m.out.gen <- matchit(treated ~ Female_10 +
+vi2_m.out.exa <- matchit(treated ~ Female_10 +
                    race_white_10 +
                    race_black_10 +
                    race_other_10 +
@@ -750,33 +835,33 @@ vi2_m.out.gen <- matchit(treated ~ Female_10 +
                    age, 
                    data = vi2_data1, 
                    replace = TRUE, 
-                   method = "genetic")
-vi2_bal_tab_gen <- bal.tab(vi2_m.out.gen, thresholds = c(m = 0.01), un = TRUE)
-vi2_bal_tab_gen
+                   method = "exact")
+vi2_bal_tab_exa <- bal.tab(vi2_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
+vi2_bal_tab_exa
 ```
-```{r Love plot of vi2 genetic matching}
-vi2_lp.gen <- love.plot(
-  vi2_m.out.gen,
+```{r Love plot of vi2 exact matching}
+vi2_lp.exa <- love.plot(
+  vi2_m.out.exa,
   threshold = .01,
   binary = 'std',
   treat = vi2_data1$treated,
   covs = vi2_X_1)
 
-vi2_lp.gen
+vi2_lp.exa
 ```
 
-#### ATT by Gen
-```{r Reproducing the dataset after Gen vi2}
-vi2_m.data.gen <- match.data(vi2_m.out.gen)
-head(vi2_m.data.gen)
+#### ATT by exa
+```{r Reproducing the dataset after exa vi2}
+vi2_m.data.exa <- match.data(vi2_m.out.exa)
+head(vi2_m.data.exa)
 ```
-#### Gen regression 
-```{r Basic regression after Gen 2 vi2}
-vi2_lm.gen1 <- lm(outcome ~ treated, data = vi2_m.data.gen)
-summary(vi2_lm.gen1)
+#### exa regression 
+```{r Basic regression after exa 2 vi2}
+vi2_lm.exa1 <- lm(outcome ~ treated, data = vi2_m.data.exa)
+summary(vi2_lm.exa1)
 ```
-```{r Regression with control after Gen vi2}
-vi2_lm.gen2 <- lm(outcome ~  treated + 
+```{r Regression with control after exa vi2}
+vi2_lm.exa2 <- lm(outcome ~  treated + 
                    Female_10 +
                    race_white_10 +
                    race_black_10 +
@@ -785,8 +870,8 @@ vi2_lm.gen2 <- lm(outcome ~  treated +
                    pool_CloudResearch_10 +
                    pool_Facebook_10 +
                    Trumppercent +
-                   age, data = vi2_m.data.gen)
-summary(vi2_lm.gen2)
+                   age, data = vi2_m.data.exa)
+summary(vi2_lm.exa2)
 ```
 
 ### Nearest neighbour matching
@@ -843,12 +928,44 @@ vi2_lm.nnm2 <- lm(outcome ~  treated +
                    age, data = vi2_m.data.nnm)
 summary(vi2_lm.nnm2)
 ```
-# To-do:
+### Comparing the ATT results from different matching
+```{r Generating vi2 regression results after matching, message=FALSE, warning=FALSE}
+# export regression result
+stargazer(model_vi2_1, vi2_lm.cem1, vi2_lm.exa1, vi2_lm.nnm1, 
+          type="text",
+          title="Regression results after matching vi2",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+```{r Generating vi2 regression results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+# export regression result
+stargazer(model_vi2_1, vi2_lm.cem1, vi2_lm.exa1, vi2_lm.nnm1, 
+          type="html",
+          title="Regression results after matching vi2",
+          out="regression_results_after_matching_vi2.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
 
-matching
-
-covariate balance
-
-summary statistics
-
-comparison between the datasets
+### Comparing the regression with control results from different matching
+```{r Generating vi2 regression with control results after matching, message=FALSE, warning=FALSE, paged.print=TRUE}
+# export regression result
+stargazer(model_vi2_2, vi2_lm.cem2, vi2_lm.exa2, vi2_lm.nnm2, 
+          type="text",
+          title="Regression with control results after matching vi2",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+```{r Generating v12 regression with control results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+# export regression result
+stargazer(model_vi2_2, vi2_lm.cem2, vi2_lm.exa2, vi2_lm.nnm2, 
+          type="html",
+          title="Regression with control results after matching vi2",
+          out="regression_results_with_control_after_matching_vi2.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
