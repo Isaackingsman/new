@@ -422,7 +422,7 @@ em1_lm.cem2 <- lm(outcome ~ treated +
 summary(em1_lm.cem2)
 ```
 ### Exact matching
-```{r Exact matching em1, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+```{r Exact matching em1, message=FALSE, warning=FALSE, paged.print=TRUE}
 set.seed(1)
 em1_m.out.exa <- matchit(treated ~ female +
                           race+
@@ -433,12 +433,12 @@ em1_m.out.exa <- matchit(treated ~ female +
                           age, 
                         data = em1_data1, 
                         method = "exact")
-em1_bal_tab_gen <- bal.tab(em1_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
-em1_bal_tab_gen
+em1_bal_tab_exa <- bal.tab(em1_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
+em1_bal_tab_exa
 ```
-```{r Love plot after exact matching em1, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+```{r Love plot after exact matching em1, message=FALSE, warning=FALSE, paged.print=TRUE}
 em1_lp.exa <- love.plot(
-  m.out.exa,
+  em1_m.out.exa,
   threshold = .1,
   binary = 'std',
   treat = em1_data1$treated,
