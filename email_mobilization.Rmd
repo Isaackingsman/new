@@ -203,7 +203,6 @@ em_m.out.exa <- matchit(treated ~ female +
                           general12 + 
                           age, 
                         data = em_data1, 
-                        replace = TRUE, 
                         method = "exact")
 em_bal_tab_exa <- bal.tab(em_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
 em_bal_tab_exa
@@ -217,6 +216,27 @@ em_lp.exa <- love.plot(
   covs = em_X_1)
 
 em_lp.exa
+```
+#### ATT by CEM
+```{r Reproducing the dataset after EXA,message=FALSE, warning=FALSE, paged.print=TRUE}
+em_m.data.exa <- match.data(em_m.out.exa)
+head(em_m.data.exa)
+```
+#### EXa regression
+```{r Basic regression after exa, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_lm.exa1 <- lm(outcome ~ treated, data = em_m.data.exa)
+summary(em_lm.exa1)
+```
+```{r Regression with control after exa, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_lm.exa2 <- lm(outcome ~ treated + 
+                   age +
+                   female +
+                   race +
+                   party +
+                   congressionalDistrict +
+                   historyCode2016 +
+                   general12, data = em_m.data.exa)
+summary(em_lm.exa2)
 ```
 ### Nearest neighbour matching
 ```{r NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
@@ -244,11 +264,68 @@ em_lp.nnm <- love.plot(
 
 em_lp.nnm
 ```
-### Compstinh the ATT results from different matching
-```{r Generating em regression results after matching,message=FALSE, warning=FALSE}
-# export regression results
-stargazer(model_em_1, em_lm.cem1, em_lm.exa1, em_lm.nnm1,
-          type = "text")
+#### ATT by NNM
+```{r Reproducing the dataset after NNM,message=FALSE, warning=FALSE, paged.print=TRUE}
+em_m.data.nnm <- match.data(em_m.out.nnm)
+head(em_m.data.nnm)
+```
+#### NNM regression
+```{r Basic regression after NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_lm.nnm1 <- lm(outcome ~ treated, data = em_m.data.nnm)
+summary(em_lm.nnm1)
+```
+```{r Regression with control after NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_lm.nnm2 <- lm(outcome ~ treated + 
+                   age +
+                   female +
+                   race +
+                   party +
+                   congressionalDistrict +
+                   historyCode2016 +
+                   general12, data = em_m.data.nnm)
+summary(em_lm.nnm2)
+```
+
+### Comparing the ATT results from different matching
+```{r Generating em regression results after matching, message=FALSE, warning=FALSE}
+# export regression result
+stargazer(model_em_1, em_lm.cem1, em_lm.exa1, em_lm.nnm1, 
+          type="text",
+          title="Regression results after matching em",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+```{r Generating em regression results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+# export regression result
+stargazer(model_em_1, em_lm.cem1, em_lm.exa1, em_lm.nnm1, 
+          type="html",
+          title="Regression results after matching em",
+          out="regression_results_after_matching_em.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+
+### Comparing the regression with control results from different matching
+```{r Generating em regression with control results after matching, message=FALSE, warning=FALSE, paged.print=TRUE}
+# export regression result
+stargazer(model_em_2, em_lm.cem2, em_lm.exa2, em_lm.nnm2, 
+          type="text",
+          title="Regression with control results after matching em",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+```{r Generating em regression with control results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+# export regression result
+stargazer(model_em_2, em_lm.cem2, em_lm.exa2, em_lm.nnm2, 
+          type="html",
+          title="Regression with control results after matching em",
+          out="regression_results_with_control_after_matching_em.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
 ```
 
 
@@ -323,12 +400,12 @@ em1_lp.cem <- love.plot(
 
 em1_lp.cem
 ```
-### ATT by CEM
+#### ATT by CEM
 ```{r Reproducing the dataset after CEM em1,message=FALSE, warning=FALSE, paged.print=TRUE}
 em1_m.data.cem <- match.data(em1_m.out.cem)
 head(em1_m.data.cem)
 ```
-### CEM regression
+#### CEM regression
 ```{r Basic regression after CEM em1, message=FALSE, warning=FALSE, paged.print=TRUE}
 em1_lm.cem1 <- lm(outcome ~ treated, data = em1_m.data.cem)
 summary(em1_lm.cem1)
@@ -344,7 +421,7 @@ em1_lm.cem2 <- lm(outcome ~ treated +
                    general12, data = em1_m.data.cem)
 summary(em1_lm.cem2)
 ```
-## Exact matching
+### Exact matching
 ```{r Exact matching em1, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 set.seed(1)
 em1_m.out.exa <- matchit(treated ~ female +
@@ -355,7 +432,6 @@ em1_m.out.exa <- matchit(treated ~ female +
                           general12 + 
                           age, 
                         data = em1_data1, 
-                        replace = TRUE, 
                         method = "exact")
 em1_bal_tab_gen <- bal.tab(em1_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
 em1_bal_tab_gen
@@ -371,7 +447,28 @@ em1_lp.exa <- love.plot(
 
 em1_lp.exa
 ```
-## Nearest neighbour matching
+#### ATT by EXA
+```{r Reproducing the dataset after EXA em1, message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_m.data.exa <- match.data(em1_m.out.exa)
+head(em1_m.data.exa)
+```
+#### EXA regression
+```{r Basic regression after EXA em1, message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_lm.exa1 <- lm(outcome ~ treated, data = em1_m.data.exa)
+summary(em1_lm.exa1)
+```
+```{r Regression with control after EXA em1, message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_lm.exa2 <- lm(outcome ~ treated + 
+                   age +
+                   female +
+                   race +
+                   party +
+                   congressionalDistrict +
+                   historyCode2016 +
+                   general12, data = em1_m.data.exa)
+summary(em1_lm.exa2)
+```
+### Nearest neighbour matching
 ```{r NNM em1, message=FALSE, warning=FALSE, paged.print=TRUE}
 em1_m.out.nnm <- matchit(treated ~ female +
                           race+
@@ -397,12 +494,64 @@ em1_lp.nnm <- love.plot(
 
 em1_lp.nnm
 ```
-# To-do:
-
-matching
-
-covariate balance
-
-summary statistics
-
-comparison between the datasets
+#### ATT by NNM
+```{r Reproducing the dataset after NNM em1, message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_m.data.nnm <- match.data(em1_m.out.nnm)
+head(em1_m.data.nnm)
+```
+#### NNM regression
+```{r Basic regression after NNM em1, message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_lm.nnm1 <- lm(outcome ~ treated, data = em1_m.data.nnm)
+summary(em1_lm.nnm1)
+```
+```{r Regression with control after NNM em1, message=FALSE, warning=FALSE, paged.print=TRUE}
+em1_lm.nnm2 <- lm(outcome ~ treated + 
+                   age +
+                   female +
+                   race +
+                   party +
+                   congressionalDistrict +
+                   historyCode2016 +
+                   general12, data = em1_m.data.nnm)
+summary(em1_lm.nnm2)
+```
+### Comparing the ATT results from different matching
+```{r Generating em1 regression results after matching, message=FALSE, warning=FALSE}
+# export regression result
+stargazer(model_em1_1, em1_lm.cem1, em1_lm.exa1, em1_lm.nnm1, 
+          type="text",
+          title="Regression results after matching em1",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+```{r Generating em1 regression results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+# export regression result
+stargazer(model_em1_1, em1_lm.cem1, em1_lm.exa1, em1_lm.nnm1, 
+          type="html",
+          title="Regression results after matching em1",
+          out="regression_results_after_matching_em1.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+### Comparing the regression with control results from different matching
+```{r Generating em1 regression with control results after matching, message=FALSE, warning=FALSE, paged.print=TRUE}
+# export regression result
+stargazer(model_em1_2, em1_lm.cem2, em1_lm.exa2, em1_lm.nnm2, 
+          type="text",
+          title="Regression with control results after matching em1",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+```{r Generating em1 regression with control results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+# export regression result
+stargazer(model_em1_2, em1_lm.cem2, em1_lm.exa2, em1_lm.nnm2, 
+          type="html",
+          title="Regression with control results after matching em1",
+          out="regression_results_with_control_after_matching_em1.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```

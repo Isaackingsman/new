@@ -263,7 +263,6 @@ vi_m.out.exa <- matchit(treated ~ Female_10 +
                    Trumppercent +
                    age, 
                    data = vi_data1, 
-                   replace = TRUE, 
                    method = "exact")
 vi_bal_tab_exa <- bal.tab(vi_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
 vi_bal_tab_exa
@@ -548,7 +547,6 @@ vi1_m.out.exa <- matchit(treated ~ Female_10 +
                    Trumppercent +
                    age, 
                    data = vi1_data1, 
-                   replace = TRUE, 
                    method = "exact")
 vi1_bal_tab_exa <- bal.tab(vi1_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
 vi1_bal_tab_exa
@@ -674,7 +672,7 @@ stargazer(model_vi1_2, vi1_lm.cem2, vi1_lm.exa2, vi1_lm.nnm2,
           intercept.top = T,
           digits=4)
 ```
-```{r Generating v1i regression with control results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+```{r Generating vi1 regression with control results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
 # export regression result
 stargazer(model_vi1_2, vi1_lm.cem2, vi1_lm.exa2, vi1_lm.nnm2, 
           type="html",
@@ -818,7 +816,7 @@ vi2_lm.cem2 <- lm(outcome ~  treated +
                    age, data = vi2_m.data.cem)
 summary(vi2_lm.cem2)
 ```
-### exact matching
+### Exact matching
 ```{r vi2 exact matching, message=FALSE, warning=FALSE}
 set.seed(1)
 vi2_m.out.exa <- matchit(treated ~ Female_10 +
@@ -834,7 +832,6 @@ vi2_m.out.exa <- matchit(treated ~ Female_10 +
                    Trumppercent +
                    age, 
                    data = vi2_data1, 
-                   replace = TRUE, 
                    method = "exact")
 vi2_bal_tab_exa <- bal.tab(vi2_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
 vi2_bal_tab_exa
@@ -850,7 +847,7 @@ vi2_lp.exa <- love.plot(
 vi2_lp.exa
 ```
 
-#### ATT by exa
+#### ATT by Exa
 ```{r Reproducing the dataset after exa vi2}
 vi2_m.data.exa <- match.data(vi2_m.out.exa)
 head(vi2_m.data.exa)
