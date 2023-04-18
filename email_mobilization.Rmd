@@ -68,7 +68,9 @@ em_cleaned <- email_mobilization %>%
                               major_party != 3 ~ 0),
          female = if_else(gender == "F", 1,0),
          non_white = if_else(minority == 1,1,0),
-         outcome = if_else(outcome == TRUE, 1,0))
+         outcome = if_else(outcome == TRUE, 1,0),
+         congressionalDistrict = factor(congressionalDistrict),
+         race = factor(race))
 
 head(em_cleaned)
 ```
@@ -78,10 +80,8 @@ Some of the variables are binary indicators so they are converted into factors.
 em_cleaned %>%
   # turn binary indicators into factors so that we can get more useful summaries
   mutate(gender = factor(gender), 
-         race = factor(race),
          party = factor(party), 
          voterStatus = factor(voterStatus),
-         congressionalDistrict = factor(congressionalDistrict),
          general16 = factor(general16),
          outcome = factor(outcome),
          historyCode2016 = factor(historyCode2016), 
@@ -217,7 +217,7 @@ em_lp.exa <- love.plot(
 
 em_lp.exa
 ```
-#### ATT by CEM
+#### ATT by EXA
 ```{r Reproducing the dataset after EXA,message=FALSE, warning=FALSE, paged.print=TRUE}
 em_m.data.exa <- match.data(em_m.out.exa)
 head(em_m.data.exa)

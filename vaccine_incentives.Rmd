@@ -284,7 +284,7 @@ vi_m.data.exa <- match.data(vi_m.out.exa)
 head(vi_m.data.exa)
 ```
 #### exact regression 
-```{r Basic regression after Geb}
+```{r Basic regression after exact}
 vi_lm.exa1 <- lm(outcome ~ treated, data = vi_m.data.exa)
 summary(vi_lm.exa1)
 ```
