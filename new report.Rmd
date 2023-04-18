@@ -151,8 +151,6 @@ em_data1 <- na.omit(em_cleaned[,em_cem1_var])
 
 em_X_1 <- em_data1 %>%
   dplyr::select(treated, female,race, party, congressionalDistrict,    historyCode2016, general12)
-
-
 ```
 
 ```{r NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
@@ -500,7 +498,7 @@ stargazer(model_em1_1, em1_lm.nnm1, em1_lm.exa1, em1_lm.cem1,
 ```
 
 # Vaccine incentives
-```{r Loading the dataset as tibble, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+```{r Loading the vi dataset as tibble, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 # load dataset
 vaccine_incentives <- read_delim("analysis_ready.csv",
 delim = ";", escape_double = FALSE, trim_ws = TRUE) %>% # need to change the folder path
@@ -512,10 +510,10 @@ head(vaccine_incentives)
 
 ## Experimental groups by treatment
 
-```{r Counting experimental groups by treatment}
+```{r Counting vi experimental groups by treatment}
 count(vaccine_incentives, Treatment)
 ```
-```{r Counting experimental groups by names}
+```{r Counting vi experimental groups by names}
 count(vaccine_incentives, Treatment2)
 ```
 
