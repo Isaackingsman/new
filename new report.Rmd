@@ -500,7 +500,7 @@ stargazer(model_em1_1, em1_lm.nnm1, em1_lm.exa1, em1_lm.cem1,
 ```
 
 # Vaccine incentives
-```{r Loading the dataset as tibble, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+```{r vi Loading the dataset as tibble, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 # load dataset
 vaccine_incentives <- read_delim("analysis_ready.csv",
 delim = ";", escape_double = FALSE, trim_ws = TRUE) %>% # need to change the folder path
@@ -512,10 +512,10 @@ head(vaccine_incentives)
 
 ## Experimental groups by treatment
 
-```{r Counting experimental groups by treatment}
+```{r vi Counting experimental groups by treatment}
 count(vaccine_incentives, Treatment)
 ```
-```{r Counting experimental groups by names}
+```{r vi Counting experimental groups by names}
 count(vaccine_incentives, Treatment2)
 ```
 
@@ -523,9 +523,644 @@ Control: treatment1(CDC Health Information)
 Treatment version 1: treatment2(Lottery Incentive)  
 Treatment version 2: treatment3(Cash Voucher Incentive)  
 
+```{r vi Data cleaning, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+vi_cleaned <- vaccine_incentives %>%
+  mutate(
+    Treatment = case_when(Treatment == 'treatment1' ~ 0,
+                              Treatment == 'treatment2' ~ 1,
+                              Treatment == 'treatment3' ~ 2),
+    gender = factor(gender),
+    race = factor(Race),
+    education = factor(Education),
+    pool = factor(pool),
+    outcome = if_else(clicked == 1, 1, 0),
+    treated = if_else( Treatment > 0, 1, 0),
+    Treatment_012 = factor(Treatment),
+    state = factor(state),
+    Trumphi = factor(Trumphi)) %>%
+  rename(duration = 'Duration (in seconds)') %>%
+  dplyr::select(Treatment_012,
+                gender,
+                race,
+                education,
+                pool,
+                Trumppercent,
+                Trumphi,
+                age,
+                outcome,
+                treated,
+                state,
+                duration)
 
+head(vi_cleaned)
+```
 
+## Summary statistics of whole dataset
 
+```{r vi Summary statistics of whole dataset}
+vi_cleaned %>%
+  mutate(
+    outcome = factor(outcome),
+    treated = factor(treated)
+  ) %>%
+  summary()
+```
+
+## Control vs Treatment 1 & 2 (vi)
+
+### Regression estimate
+
+Creating a basic and preliminary estimate of the treatment effect.
+
+```{r vi Experimental benchmark basic regression}
+model_vi_1 <- lm(outcome ~ treated, data = vi_cleaned)
+summary(model_vi_1)
+```
+
+### Control Regression
+
+Try adding other covariates into the regression and see
+
+```{r vi Experimental benchmark regression with control}
+model_vi_2 <- lm(outcome ~ treated +
+                   gender + 
+                   race +
+                   education +
+                   pool +
+                   Trumppercent +
+                   age +
+                   state
+                 , data = vi_cleaned)
+summary(model_vi_2)
+```
+
+### Covariate balance
+```{r vi Covariate balance, message=FALSE, warning=FALSE}
+vi_covs1 <- vi_cleaned %>%
+  dplyr::select(gender,
+                race,
+                education,
+                pool,
+                Trumppercent,
+                Trumphi,
+                age,
+                outcome,
+                treated,
+                state) %>%
+  na.omit()
+
+bal.tab(vi_covs1, treat = vi_covs1$treated)
+```
+
+```{r vi matching covariates,message=FALSE, warning=FALSE, include=FALSE}
+vi_data1 <- na.omit(vi_cleaned)
+
+vi_X_1 <- vi_data1 %>%
+  dplyr::select(gender,
+                race,
+                education,
+                pool,
+                Trumphi,
+                age,
+                treated,
+                state)
+```
+
+### Nearest neighbour matching
+```{r vi NNM}
+vi_m.out.nnm <- matchit(treated ~ gender +
+                race +
+                education +
+                pool +
+                Trumphi +
+                age +
+                state, 
+                data = vi_data1, 
+                replace = TRUE, 
+                method = "nearest")
+vi_bal_tab_nnm <- bal.tab(vi_m.out.nnm, thresholds = c(m = 0.01), un = TRUE)
+vi_bal_tab_nnm
+```
+```{r vi Love plot after NNM}
+vi_lp.nnm <- love.plot(
+  vi_m.out.nnm,
+  threshold = .01,
+  binary = 'std',
+  treat = vi_data1$treated,
+  covs = vi_X_1)
+
+vi_lp.nnm
+```
+
+#### ATT by NNM
+```{r vi Reproducing the dataset after NNM}
+vi_m.data.nnm <- match.data(vi_m.out.nnm)
+head(vi_m.data.nnm)
+```
+
+#### NNM regression 
+```{r vi Basic regression after NNM}
+vi_lm.nnm1 <- lm(outcome ~ treated, data = vi_m.data.nnm)
+summary(vi_lm.nnm1)
+```
+
+### Exact matching
+```{r vi exact matching, message=FALSE, warning=FALSE}
+vi_m.out.exa <- matchit(treated ~ gender +
+                race +
+                education +
+                pool +
+                Trumphi +
+                age +
+                state, 
+                data = vi_data1, 
+                method = "exact")
+vi_bal_tab_exa <- bal.tab(vi_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
+vi_bal_tab_exa
+```
+
+```{r vi Love plot of exact matching}
+vi_lp.exa <- love.plot(
+  vi_m.out.exa,
+  threshold = .01,
+  binary = 'std',
+  treat = vi_data1$treated,
+  covs = vi_X_1)
+
+vi_lp.exa
+```
+
+#### ATT by exact
+```{r vi Reproducing the dataset after exact}
+vi_m.data.exa <- match.data(vi_m.out.exa)
+head(vi_m.data.exa)
+```
+
+#### exact regression 
+```{r vi Basic regression after exact}
+vi_lm.exa1 <- lm(outcome ~ treated, data = vi_m.data.exa)
+summary(vi_lm.exa1)
+```
+
+### Coarsened Exact Matching
+
+```{r vi CEM}
+vi_m.out.cem <- matchit(treated ~ gender +
+                race +
+                education +
+                pool +
+                Trumphi +
+                age +
+                state +
+                duration,
+                data = vi_data1,
+                method = "cem")
+
+vi_bal_tab_cem <- bal.tab(vi_m.out.cem,
+                       thresholds = c(m = 0.01),
+                       un = TRUE)
+vi_bal_tab_cem
+```
+```{r vi Love plot after CEM}
+vi_lp.cem <- love.plot(
+  vi_m.out.cem,
+  threshold = .01,
+  binary = 'std',
+  treat = vi_data1$treated,
+  covs = vi_X_1)
+
+vi_lp.cem
+```
+
+#### ATT by CEM
+```{r vi Reproducing the dataset after CEM}
+vi_m.data.cem <- match.data(vi_m.out.cem)
+head(vi_m.data.cem)
+```
+
+#### CEM regression 
+```{r vi Basic regression after CEM}
+vi_lm.cem1 <- lm(outcome ~ treated, data = vi_m.data.cem)
+summary(vi_lm.cem1)
+```
+
+### Comparing the ATT results from different matching
+```{r vi Generating vi regression results after matching, message=FALSE, warning=FALSE}
+# export regression result
+stargazer(model_vi_1, vi_lm.nnm1, vi_lm.exa1, vi_lm.cem1,
+          type="text",
+          title="Regression results after matching vi",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+```{r vi Generating vi regression results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+# export regression result
+stargazer(model_vi_1, vi_lm.nnm1, vi_lm.exa1, vi_lm.cem1, 
+          type="html",
+          title="Regression results after matching vi",
+          out="regression_results_after_matching_vi.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+
+## Control vs Treatment 1 only (vi1)  
+
+### Experimental benchmark  
+
+Creating a basic and preliminary estimate of the treatment effect.
+
+```{r vi Creating a subset of control and treatment 1 only}
+vi1_cleaned <- vi_cleaned %>%
+  filter(Treatment_012 != 2)
+
+count(vi1_cleaned, Treatment_012)
+```
+```{r vi1 Experimental benchmark regression}
+model_vi1_1 <- lm(outcome ~ treated, data = vi1_cleaned)
+summary(model_vi1_1)
+```
+Try adding other covariates into the regression and see
+```{r vi1 Experimental benchmark regression with control}
+model_vi1_2 <- lm(outcome ~ treated +
+                   gender + 
+                   race +
+                   education +
+                   pool +
+                   Trumppercent +
+                   age +
+                   state, data = vi1_cleaned)
+summary(model_vi1_2)
+```
+
+### Covariate balance
+```{r vi1 Covariate balance, message=FALSE, warning=FALSE}
+vi1_covs1 <- vi1_cleaned %>%
+  dplyr::select(gender,
+                race,
+                education,
+                pool,
+                Trumppercent,
+                Trumphi,
+                age,
+                outcome,
+                treated,
+                state) %>%
+  na.omit()
+
+bal.tab(vi1_covs1, treat = vi1_covs1$treated)
+```
+```{r vi1 matching covariates,message=FALSE, warning=FALSE, include=FALSE}
+vi1_data1 <- na.omit(vi1_cleaned)
+
+vi1_X_1 <- vi1_data1 %>%
+  dplyr::select(gender,
+                race,
+                education,
+                pool,
+                Trumphi,
+                age,
+                treated,
+                state)
+```
+### Nearest neighbour matching
+```{r vi1 NNM}
+vi1_m.out.nnm <- matchit(treated ~ gender +
+                race +
+                education +
+                pool +
+                Trumphi +
+                age +
+                state, 
+                data = vi1_data1, 
+                replace = TRUE, 
+                method = "nearest")
+vi1_bal_tab_nnm <- bal.tab(vi1_m.out.nnm, thresholds = c(m = 0.01), un = TRUE)
+vi1_bal_tab_nnm
+```
+```{r vi1 Love plot after NNM}
+vi1_lp.nnm <- love.plot(
+  vi1_m.out.nnm,
+  threshold = .01,
+  binary = 'std',
+  treat = vi1_data1$treated,
+  covs = vi1_X_1)
+
+vi1_lp.nnm
+```
+
+#### ATT by NNM
+```{r vi1 Reproducing the dataset after NNM}
+vi1_m.data.nnm <- match.data(vi1_m.out.nnm)
+head(vi1_m.data.nnm)
+```
+
+#### NNM regression 
+```{r vi1 Basic regression after NNM}
+vi1_lm.nnm1 <- lm(outcome ~ treated, data = vi1_m.data.nnm)
+summary(vi1_lm.nnm1)
+```
+
+### Exact matching
+```{r vi1 exact matching, message=FALSE, warning=FALSE}
+vi1_m.out.exa <- matchit(treated ~ gender +
+                race +
+                education +
+                pool +
+                Trumphi +
+                age +
+                state, 
+                data = vi1_data1, 
+                method = "exact")
+vi1_bal_tab_exa <- bal.tab(vi1_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
+vi1_bal_tab_exa
+```
+
+```{r vi1 Love plot of exact matching}
+vi1_lp.exa <- love.plot(
+  vi1_m.out.exa,
+  threshold = .01,
+  binary = 'std',
+  treat = vi1_data1$treated,
+  covs = vi1_X_1)
+
+vi1_lp.exa
+```
+
+#### ATT by exact
+```{r vi1 Reproducing the dataset after exact}
+vi1_m.data.exa <- match.data(vi1_m.out.exa)
+head(vi1_m.data.exa)
+```
+
+#### exact regression 
+```{r vi1 Basic regression after exact}
+vi1_lm.exa1 <- lm(outcome ~ treated, data = vi1_m.data.exa)
+summary(vi1_lm.exa1)
+```
+
+### Coarsened Exact Matching
+```{r vi1 CEM}
+vi1_m.out.cem <- matchit(treated ~ gender +
+                race +
+                education +
+                pool +
+                Trumphi +
+                age +
+                state +
+                duration,
+                data = vi1_data1,
+                method = "cem")
+
+vi1_bal_tab_cem <- bal.tab(vi1_m.out.cem,
+                       thresholds = c(m = 0.01),
+                       un = TRUE)
+vi1_bal_tab_cem
+```
+```{r vi1 Love plot after CEM}
+vi1_lp.cem <- love.plot(
+  vi1_m.out.cem,
+  threshold = .01,
+  binary = 'std',
+  treat = vi1_data1$treated,
+  covs = vi1_X_1)
+
+vi1_lp.cem
+```
+
+#### ATT by CEM
+```{r vi1 Reproducing the dataset after CEM}
+vi1_m.data.cem <- match.data(vi1_m.out.cem)
+head(vi1_m.data.cem)
+```
+
+#### CEM regression 
+```{r vi1 Basic regression after CEM}
+vi1_lm.cem1 <- lm(outcome ~ treated, data = vi1_m.data.cem)
+summary(vi1_lm.cem1)
+```
+
+### Comparing the ATT results from different matching
+```{r vi1 Generating vi regression results after matching, message=FALSE, warning=FALSE}
+# export regression result
+stargazer(model_vi1_1, vi1_lm.nnm1, vi1_lm.exa1, vi1_lm.cem1,
+          type="text",
+          title="Regression results after matching vi1",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+```{r vi1 Generating vi regression results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+# export regression result
+stargazer(model_vi1_1, vi1_lm.nnm1, vi1_lm.exa1, vi1_lm.cem1, 
+          type="html",
+          title="Regression results after matching vi1",
+          out="regression_results_after_matching_vi.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+
+## Control vs Treatment 2 only (vi2)
+### Experimental benchmark  
+Creating a basic and preliminary estimate of the treatment effect.
+```{r vi2 Creating a subset of control and treatment 2 only}
+vi2_cleaned <- vi_cleaned %>%
+  filter(Treatment_012 != 1)
+
+count(vi2_cleaned, Treatment_012)
+```
+
+```{r vi2 Experimental benchmark regression}
+model_vi2_1 <- lm(outcome ~ treated, data = vi2_cleaned)
+summary(model_vi2_1)
+```
+
+### Control Regression
+
+Try adding other covariates into the regression and see
+
+```{r vi2 Experimental benchmark regression with control}
+model_vi2_2 <- lm(outcome ~ treated +
+                   gender + 
+                   race +
+                   education +
+                   pool +
+                   Trumppercent +
+                   age +
+                   state
+                 , data = vi_cleaned)
+summary(model_vi2_2)
+```
+
+### Covariate balance
+```{r vi2 Covariate balance, message=FALSE, warning=FALSE}
+vi2_covs1 <- vi2_cleaned %>%
+  dplyr::select(gender,
+                race,
+                education,
+                pool,
+                Trumppercent,
+                Trumphi,
+                age,
+                outcome,
+                treated,
+                state) %>%
+  na.omit()
+
+bal.tab(vi2_covs1, treat = vi2_covs1$treated)
+```
+```{r vi2 matching covariates,message=FALSE, warning=FALSE, include=FALSE}
+vi2_data1 <- na.omit(vi2_cleaned)
+
+vi2_X_1 <- vi2_data1 %>%
+  dplyr::select(gender,
+                race,
+                education,
+                pool,
+                Trumphi,
+                age,
+                treated,
+                state)
+```
+### Nearest neighbour matching
+```{r vi2 NNM}
+vi2_m.out.nnm <- matchit(treated ~ gender +
+                race +
+                education +
+                pool +
+                Trumphi +
+                age +
+                state, 
+                data = vi2_data1, 
+                replace = TRUE, 
+                method = "nearest")
+vi2_bal_tab_nnm <- bal.tab(vi2_m.out.nnm, thresholds = c(m = 0.01), un = TRUE)
+vi2_bal_tab_nnm
+```
+```{r vi2 Love plot after NNM}
+vi2_lp.nnm <- love.plot(
+  vi2_m.out.nnm,
+  threshold = .01,
+  binary = 'std',
+  treat = vi2_data1$treated,
+  covs = vi2_X_1)
+
+vi2_lp.nnm
+```
+
+#### ATT by NNM
+```{r vi2 Reproducing the dataset after NNM}
+vi2_m.data.nnm <- match.data(vi2_m.out.nnm)
+head(vi2_m.data.nnm)
+```
+
+#### NNM regression 
+```{r vi2 Basic regression after NNM}
+vi2_lm.nnm1 <- lm(outcome ~ treated, data = vi2_m.data.nnm)
+summary(vi2_lm.nnm1)
+```
+
+### Exact matching
+```{r vi2 exact matching, message=FALSE, warning=FALSE}
+vi2_m.out.exa <- matchit(treated ~ gender +
+                race +
+                education +
+                pool +
+                Trumphi +
+                age +
+                state, 
+                data = vi2_data1, 
+                method = "exact")
+vi2_bal_tab_exa <- bal.tab(vi2_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
+vi2_bal_tab_exa
+```
+
+```{r vi2 Love plot of exact matching}
+vi2_lp.exa <- love.plot(
+  vi2_m.out.exa,
+  threshold = .01,
+  binary = 'std',
+  treat = vi2_data1$treated,
+  covs = vi2_X_1)
+
+vi2_lp.exa
+```
+
+#### ATT by exact
+```{r vi2 Reproducing the dataset after exact}
+vi2_m.data.exa <- match.data(vi2_m.out.exa)
+head(vi2_m.data.exa)
+```
+
+#### exact regression 
+```{r vi2 Basic regression after exact}
+vi2_lm.exa1 <- lm(outcome ~ treated, data = vi2_m.data.exa)
+summary(vi2_lm.exa1)
+```
+
+### Coarsened Exact Matching
+```{r vi2 CEM}
+vi2_m.out.cem <- matchit(treated ~ gender +
+                race +
+                education +
+                pool +
+                Trumphi +
+                age +
+                state +
+                duration,
+                data = vi2_data1,
+                method = "cem")
+
+vi2_bal_tab_cem <- bal.tab(vi2_m.out.cem,
+                       thresholds = c(m = 0.01),
+                       un = TRUE)
+vi2_bal_tab_cem
+```
+```{r vi2 Love plot after CEM}
+vi2_lp.cem <- love.plot(
+  vi2_m.out.cem,
+  threshold = .01,
+  binary = 'std',
+  treat = vi2_data1$treated,
+  covs = vi2_X_1)
+
+vi2_lp.cem
+```
+
+#### ATT by CEM
+```{r vi2 Reproducing the dataset after CEM}
+vi2_m.data.cem <- match.data(vi2_m.out.cem)
+head(vi2_m.data.cem)
+```
+
+#### CEM regression 
+```{r vi2 Basic regression after CEM}
+vi2_lm.cem1 <- lm(outcome ~ treated, data = vi2_m.data.cem)
+summary(vi2_lm.cem1)
+```
+
+### Comparing the ATT results from different matching
+```{r vi2 Generating vi regression results after matching, message=FALSE, warning=FALSE}
+# export regression result
+stargazer(model_vi2_1, vi2_lm.nnm1, vi2_lm.exa1, vi2_lm.cem1,
+          type="text",
+          title="Regression results after matching vi2",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+```{r vi2 Generating vi regression results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+# export regression result
+stargazer(model_vi2_1, vi2_lm.nnm1, vi2_lm.exa1, vi2_lm.cem1, 
+          type="html",
+          title="Regression results after matching vi2",
+          out="regression_results_after_matching_vi.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
 
 
 
