@@ -3,18 +3,18 @@ title: "new report"
 author: "Lee Che Yuet Isaac"
 date: "2023-04-17"
 output:
-  html_document: default
   pdf_document: default
   word_document: default
+  html_document: default
 ---
 
 **some of the codes have been hiden for easier reading purpose**
 
-```{r setup, include=FALSE}
+```{r Setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-```{r working directory setting and clearing environment, message=FALSE, include=FALSE, results='hide'}
+```{r Working directory setting and clearing environment, message=FALSE, include=FALSE, results='hide'}
 #getwd()
 #setwd()
 #rm(list=ls())
@@ -33,7 +33,7 @@ if (any(installed_packages == FALSE)) {
 # load required packages
 invisible(lapply(packages, library, character.only = TRUE))
 ```
-```{r Loading the dataset as tibble, message=FALSE, warning=FALSE, include=FALSE}
+```{r Loading the em dataset as tibble, message=FALSE, warning=FALSE, include=FALSE}
 # load dataset: email_mobilization
 email_mobilization <- read_csv("subset_finalAnalysisFile20170711.csv") %>% # need to change the folder path
   as_tibble()
@@ -53,10 +53,10 @@ head(email_mobilization)
 
 ## Counting experimental groups by treatment
 
-```{r Counting experimental groups by treatment}
+```{r em Counting experimental groups by treatment}
 count(email_mobilization, treat)
 ```
-```{r Data cleaning, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+```{r em Data cleaning, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 em_cleaned <- email_mobilization %>%
   filter(registered_prior == 'TRUE' & validEmail == T & treat != 'NA') %>%
   mutate(historyCode2016 = if_else(is.na(historyCode2016),'N',historyCode2016)) %>%
@@ -77,10 +77,8 @@ em_cleaned <- email_mobilization %>%
 
 head(em_cleaned)
 ```
-
 ## Summary Statistics
-
-```{r Summary Statistics, echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r em Summary Statistics, echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_cleaned %>%
   # turn binary indicators into factors so that we can get more useful summaries
   mutate(gender = factor(gender), 
@@ -107,11 +105,9 @@ em_cleaned %>%
          non_white= factor(non_white)) %>%
   summary()
 ```
-
 ## Control vs Treatment
-
 ### Regression estimate
-```{r Experimental benchmark by regression, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r em Experimental benchmark by regression, message=FALSE, warning=FALSE, paged.print=TRUE}
 model_em_1 <- lm(outcome ~ treated, data = em_cleaned)
 summary(model_em_1)
 ```
@@ -121,7 +117,7 @@ It has shown that the estimate of the ATT is -0.005071, with a p-value of 0.0058
 
 Try adding other covariates into the regression and see
 
-```{r Experimental benchmark by regression with control, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r em Experimental benchmark by regression with control, message=FALSE, warning=FALSE, paged.print=TRUE}
 model_em_2 <- lm(outcome ~ treated + 
                    age +
                    female +
@@ -132,10 +128,11 @@ model_em_2 <- lm(outcome ~ treated +
                    general12, data = em_cleaned)
 summary(model_em_2)
 ```
+
 The estimate of the ATT in this regression model with control variables is 9.214e-15 and a p-value of 0.65061, which is drastically different from the previous estimate. It could be impacted by the control variables tremendously.
 
 ### Covariate balance
-```{r Covariate balance, echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r em Covariate balance, echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_vars <- c("treated", "female","race", "party", "congressionalDistrict",    "historyCode2016", "general12", "age")
 em_covs1 <- na.omit(em_cleaned[,em_vars])
 bal.tab(em_covs1, treat = em_covs1$treated)
@@ -145,17 +142,14 @@ From the above covariate balance table, we can observe that the unadjusted diffe
 The Three chosen matching methods are Nearest Neighbor Matching, Exact Matching and Coarsened Exact Matching.
 
 ### Nearest neighbour matching
-```{r message=FALSE, warning=FALSE, include=FALSE}
+```{r em Matching preparation, message=FALSE, warning=FALSE, include=FALSE}
 em_cem1_var <- c("treated", "female","race", "party", "congressionalDistrict",    "historyCode2016", "general12","age", "outcome")
 em_data1 <- na.omit(em_cleaned[,em_cem1_var])
 
 em_X_1 <- em_data1 %>%
   dplyr::select(treated, female,race, party, congressionalDistrict,    historyCode2016, general12)
-
-
 ```
-
-```{r NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r em NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_m.out.nnm <- matchit(treated ~ female +
                           race+
                           party+
@@ -166,39 +160,34 @@ em_m.out.nnm <- matchit(treated ~ female +
                         data = em_data1, 
                         replace = TRUE, 
                         method = "nearest")
-em_bal_tab_nnm <- bal.tab(em_m.out.nnm, thresholds = c(m = 0.01), un = TRUE)
+em_bal_tab_nnm <- bal.tab(em_m.out.nnm, thresholds = c(m = 0.01), un = TRUE, binary = "std")
 em_bal_tab_nnm
 ```
-```{r Love plot after NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r em Love plot after NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_lp.nnm <- love.plot(
   em_m.out.nnm,
   threshold = .01,
   binary = 'std',
   treat = em_data1$treated,
-  covs = em_X_1
-)
+  covs = em_X_1)
 
 em_lp.nnm
 ```
 
 From the covariate balance table, we can see a large number of the adjusted difference are larger than the unadjusted difference, it may because of nearest neighbor matching does not give up treatment units that are far from being exactly matched, still match with the closest comparable unit.
-
-```{r Reproducing the dataset after NNM, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+#### ATT estimate by nearest neighbor matching
+```{r em Reproducing the dataset after NNM, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 em_m.data.nnm <- match.data(em_m.out.nnm)
 head(em_m.data.nnm)
 ```
-
-#### ATT estimate by nearest neighbor matching
-
-```{r Basic regression after NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r em Basic regression after NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_lm.nnm1 <- lm(outcome ~ treated, data = em_m.data.nnm)
 summary(em_lm.nnm1)
 ```
-
 The estimate for the ATT after using nearest neighbor matching is 0.0190735, which has a p-value of less than 2e^-16. 
 
 ### Exact matching
-```{r Exact matching, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r em EXA, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_m.out.exa <- matchit(treated ~ female +
                           race+
                           party+
@@ -211,11 +200,10 @@ em_m.out.exa <- matchit(treated ~ female +
 em_bal_tab_exa <- bal.tab(em_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
 em_bal_tab_exa
 ```
-
-```{r Love plot after exact matching, echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r em Love plot after EXA, echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_lp.exa <- love.plot(
   em_m.out.exa,
-  threshold = .1,
+  threshold = .01,
   binary = 'std',
   treat = em_data1$treated,
   covs = em_X_1)
@@ -225,14 +213,12 @@ em_lp.exa
 
 From the covariate balance table and loveplot, we can see that all of the adjusted difference are reduced to 0, it is because the unmatched units are all dropped.
 
-```{r Reproducing the dataset after EXA, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+#### ATT estimate by exact matching
+```{r em Reproducing the dataset after EXA, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 em_m.data.exa <- match.data(em_m.out.exa)
 head(em_m.data.exa)
 ```
-
-#### ATT estimate by exact matching
-
-```{r Basic regression after exa, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r em Basic regression after EXA, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_lm.exa1 <- lm(outcome ~ treated, data = em_m.data.exa)
 summary(em_lm.exa1)
 ```
@@ -241,7 +227,7 @@ The estimate for the ATT after using exact matching is 0.0190735, which has a p-
 
 ### Coarsened Exact Matching
 
-```{r CEM, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r em CEM, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_m.out.cem <- matchit(treated ~ female +
                           race+
                           party+
@@ -254,7 +240,7 @@ em_m.out.cem <- matchit(treated ~ female +
 em_bal_tab_cem <- bal.tab(em_m.out.cem, thresholds = c(m = 0.01), un = TRUE)
 em_bal_tab_cem
 ```
-```{r Love plot after CEM, echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r em Love plot after CEM, echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_lp.cem <- love.plot(
   em_m.out.cem,
   threshold = .01,
@@ -268,15 +254,12 @@ em_lp.cem
 From the covariate balance table, we can see that most of the adjusted difference are reduced to 0, with the only exception of age, which is a continuous variable and may have a higher difficulty of being perfectly matched with too many possible discrete values.
 
 From the loveplot, we can observe that all of the adjusted differences is smaller than the unadjusted difference.
-
-```{r Reproducing the dataset after CEM, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+#### ATT by coarsened exact matching
+```{r em Reproducing the dataset after CEM, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 em_m.data.cem <- match.data(em_m.out.cem)
 head(em_m.data.cem)
 ```
-
-#### ATT by coarsened exact matching
-
-```{r Basic regression after CEM, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r em Basic regression after CEM, message=FALSE, warning=FALSE, paged.print=TRUE}
 em_lm.cem1 <- lm(outcome ~ treated, data = em_m.data.cem)
 summary(em_lm.cem1)
 ```
@@ -306,194 +289,346 @@ stargazer(model_em_1, em_lm.nnm1, em_lm.exa1, em_lm.cem1,
 
 The above table shows the ATT estimate from unmatched sample, nearest neighbor matching sample, exacting matching sample and coarsened exact matching sample respectively. All of them have a p-value less than 0.01. While the unmatched sample has an -0.0051 estimate, the 3 matching samples produced a much higher estimate of 0.00192, 0.0191 and 0.0214 respectively. 
 
-## Control vs Treatment 1 (em1)  
+## Black voters
+```{r em Counting Race Black}
+count(em_cleaned, race)
+```
 
-### Regression estimate 
+`3`: Black  
+
+### Regression estimate
 Creating a basic and preliminary estimate of the treatment effect.
-```{r Experimental benchmark by regression of em1 ,message=FALSE, warning=FALSE, paged.print=TRUE}
-em1_cleaned <- em_cleaned %>%
-  filter(treat < 2)
+```{r em_b Experimental benchmark by regression,message=FALSE, warning=FALSE, paged.print=TRUE}
+em_b_cleaned <- em_cleaned %>%
+  filter(race == 3)
 
-model_em1_1 <- lm(outcome ~ treated, data = em1_cleaned)
-summary(model_em1_1)
+model_em_b_1 <- lm(outcome ~ treated, data = em_b_cleaned)
+summary(model_em_b_1)
 ```
-
-It has shown that the estimate of the ATT is -0.004152, with a p-value of 0.0734.
-
-### Control regression estimate
-
-Try adding other covariates into the regression and see
-
-```{r Experimental benchmark by regression with control of em1 ,message=FALSE, warning=FALSE, paged.print=TRUE}
-model_em1_2 <- lm(outcome ~ treated + 
-                   age +
-                   female +
-                   race +
-                   party +
-                   congressionalDistrict +
-                   historyCode2016 +
-                   general12, data = em_cleaned)
-summary(model_em1_2)
-```
-
-It can be observed that the estimate for the treatment indicator has been largely reduced to 9.214e-15 and a p-value of 0.65061, hugely affected by other control variables.
 
 ### Covariate balance
-
-```{r Covariate balance of em1,message=FALSE, warning=FALSE, paged.print=TRUE}
-em1_vars <- c("treated", "female","race", "party", "congressionalDistrict", "historyCode2016", "general12", "age")
-em1_covs1 <- na.omit(em1_cleaned[,em1_vars])
-bal.tab(em1_covs1, treat = em1_covs1$treated)
+```{r em_b Covariate balance ,message=FALSE, warning=FALSE, paged.print=TRUE}
+em_b_vars <- c("treated", "female","party", "congressionalDistrict", "historyCode2016", "general12", "age")
+em_b_covs1 <- na.omit(em_b_cleaned[,em_b_vars])
+bal.tab(em_b_covs1, treat = em_b_covs1$treated)
 ```
-
-From the above covariate balance table, we can observe that the unadjusted differences of the covariates are almost 0. Similar situation to the mentioned analysis.
 
 ### Nearest neighbour matching
+```{r em_b Matching preparation, message=FALSE, warning=FALSE, include=FALSE}
+em_b_cem1_var <- c("treated", 
+                   "female", 
+                   "party", 
+                   "congressionalDistrict", 
+                   "historyCode2016", 
+                   "general12",
+                   "age", 
+                   "outcome")
+em_b_data1 <- na.omit(em_b_cleaned[,em_b_cem1_var])
 
-```{r message=FALSE, warning=FALSE}
-em1_cem1_var <- c("treated", "female","race", "party", "congressionalDistrict",    "historyCode2016", "general12","age", "outcome")
-em1_data1 <- na.omit(em1_cleaned[,em1_cem1_var])
-
-em1_X_1 <- em1_data1 %>%
-  dplyr::select(treated, female,race, party, congressionalDistrict,    historyCode2016, general12)
-
+em_b_X_1 <- em_b_data1 %>%
+  dplyr::select(treated, female, party, congressionalDistrict, historyCode2016, general12)
 ```
-
-
-```{r NNM em1, message=FALSE, warning=FALSE, paged.print=TRUE}
-em1_m.out.nnm <- matchit(treated ~ female +
-                          race+
+```{r em_b NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_b_m.out.nnm <- matchit(treated ~ female +
                           party+
                           congressionalDistrict+
                           historyCode2016+
                           general12 + 
                           age, 
-                        data = em1_data1, 
+                        data = em_b_data1, 
                         replace = TRUE, 
                         method = "nearest")
-em1_bal_tab_nnm <- bal.tab(em1_m.out.nnm, thresholds = c(m = 0.01), un = TRUE)
-em1_bal_tab_nnm
+em_b_bal_tab_nnm <- bal.tab(em_b_m.out.nnm, thresholds = c(m = 0.01), un = TRUE, binary = "std")
+em_b_bal_tab_nnm
 ```
-```{r Love plot after NNM em1, message=FALSE, warning=FALSE, paged.print=TRUE}
-em1_lp.nnm <- love.plot(
-  em1_m.out.nnm,
+
+```{r em_b Love plot after NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_b_lp.nnm <- love.plot(
+  em_b_m.out.nnm,
   threshold = .01,
   binary = 'std',
-  treat = em1_data1$treated,
-  covs = em1_X_1
-)
+  treat = em_b_data1$treated,
+  covs = em_b_X_1)
 
-em1_lp.nnm
-```
-
-```{r Reproducing the dataset after NNM em1, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
-em1_m.data.nnm <- match.data(em1_m.out.nnm)
-head(em1_m.data.nnm)
+em_b_lp.nnm
 ```
 
 #### ATT estimate by nearest neighbor matching
-
-```{r Basic regression after NNM em1, message=FALSE, warning=FALSE, paged.print=TRUE}
-em1_lm.nnm1 <- lm(outcome ~ treated, data = em1_m.data.nnm)
-summary(em1_lm.nnm1)
+```{r em_b Reproducing the dataset after NNM, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+em_b_m.data.nnm <- match.data(em_b_m.out.nnm)
+head(em_b_m.data.nnm)
+```
+```{r em_b Basic regression after NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_b_lm.nnm1 <- lm(outcome ~ treated, data = em_b_m.data.nnm)
+summary(em_b_lm.nnm1)
 ```
 
 ### Exact matching
-
-```{r Exact matching em1, message=FALSE, warning=FALSE, paged.print=TRUE}
-em1_m.out.exa <- matchit(treated ~ female +
-                          race+
+```{r em_b EXA, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_b_m.out.exa <- matchit(treated ~ female+
                           party+
                           congressionalDistrict+
                           historyCode2016+
                           general12 + 
                           age, 
-                        data = em1_data1, 
+                        data = em_b_data1, 
                         method = "exact")
-em1_bal_tab_exa <- bal.tab(em1_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
-em1_bal_tab_exa
+em_b_bal_tab_exa <- bal.tab(em_b_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
+em_b_bal_tab_exa
 ```
-```{r Love plot after exact matching em1, message=FALSE, warning=FALSE, paged.print=TRUE}
-em1_lp.exa <- love.plot(
-  em1_m.out.exa,
-  threshold = .1,
+```{r em_b Love plot after EXA, echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_b_lp.exa <- love.plot(
+  em_b_m.out.exa,
+  threshold = .01,
   binary = 'std',
-  treat = em1_data1$treated,
-  covs = em1_X_1
-)
+  treat = em_b_data1$treated,
+  covs = em_b_X_1)
 
-em1_lp.exa
+em_b_lp.exa
 ```
+
+From the covariate balance table and loveplot, we can see that all of the adjusted difference are reduced to 0, it is because the unmatched units are all dropped.
 
 #### ATT estimate by exact matching
+```{r em_b Reproducing the dataset after EXA, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+em_b_m.data.exa <- match.data(em_b_m.out.exa)
+head(em_b_m.data.exa)
+```
+```{r em_b Basic regression after EXA, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_b_lm.exa1 <- lm(outcome ~ treated, data = em_b_m.data.exa)
+summary(em_b_lm.exa1)
+```
 
-```{r Reproducing the dataset after EXA em1, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
-em1_m.data.exa <- match.data(em1_m.out.exa)
-head(em1_m.data.exa)
-```
-```{r Basic regression after EXA em1, message=FALSE, warning=FALSE, paged.print=TRUE}
-em1_lm.exa1 <- lm(outcome ~ treated, data = em1_m.data.exa)
-summary(em1_lm.exa1)
-```
+The estimate for the ATT after using exact matching is 0.0190735, which has a p-value of less than 2e^-16. 
 
 ### Coarsened Exact Matching
 
-```{r em1 CEM,message=FALSE, warning=FALSE, paged.print=TRUE}
-em1_cem1_var <- c("treated", "female","race", "party", "congressionalDistrict",    "historyCode2016", "general12","age", "outcome")
-em1_data1 <- na.omit(em1_cleaned[,em1_cem1_var])
-
-em1_X_1 <- em1_data1 %>%
-  dplyr::select(treated, female,race, party, congressionalDistrict,    historyCode2016, general12)
-
-em1_m.out.cem <- matchit(treated ~ female +
-                          race+
+```{r em_b CEM, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_b_m.out.cem <- matchit(treated ~ female +
                           party+
                           congressionalDistrict+
                           historyCode2016+
                           general12 + 
                           age,
-                     data = em1_data1, method = "cem")
+                     data = em_b_data1, method = "cem")
 
-em1_bal_tab_cem <- bal.tab(em1_m.out.cem, thresholds = c(m = 0.01), un = TRUE)
-em1_bal_tab_cem
+em_b_bal_tab_cem <- bal.tab(em_b_m.out.cem, thresholds = c(m = 0.01), un = TRUE)
+em_b_bal_tab_cem
 ```
-```{r Love plot after CEM em1 ,message=FALSE, warning=FALSE, paged.print=TRUE}
-em1_lp.cem <- love.plot(
-  em1_m.out.cem,
+```{r em_b Love plot after CEM, echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_b_lp.cem <- love.plot(
+  em_b_m.out.cem,
   threshold = .01,
   binary = 'std',
-  treat = em1_data1$treated,
-  covs = em1_X_1)
+  treat = em_b_data1$treated,
+  covs = em_b_X_1)
 
-em1_lp.cem
+em_b_lp.cem
 ```
 
-#### ATT estimate by CEM
+From the covariate balance table, we can see that most of the adjusted difference are reduced to 0, with the only exception of age, which is a continuous variable and may have a higher difficulty of being perfectly matched with too many possible discrete values.
 
-```{r Reproducing the dataset after CEM em1, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
-em1_m.data.cem <- match.data(em1_m.out.cem)
-head(em1_m.data.cem)
+From the loveplot, we can observe that all of the adjusted differences is smaller than the unadjusted difference.
+#### ATT by coarsened exact matching
+```{r em_b Reproducing the dataset after CEM, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+em_b_m.data.cem <- match.data(em_b_m.out.cem)
+head(em_b_m.data.cem)
 ```
-```{r Basic regression after CEM em1, message=FALSE, warning=FALSE, paged.print=TRUE}
-em1_lm.cem1 <- lm(outcome ~ treated, data = em1_m.data.cem)
-summary(em1_lm.cem1)
+```{r em_b Basic regression after CEM, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_b_lm.cem1 <- lm(outcome ~ treated, data = em_b_m.data.cem)
+summary(em_b_lm.cem1)
 ```
+
+The estimate for the ATT after using coarsened exact matching is 0.0213522, which has a p-value of less than 2e^-16. 
+
 ### Comparing the ATT results from different matching
-```{r Generating em1 regression results after matching, message=FALSE, warning=FALSE}
+```{r Generating em_b regression results after matching, message=FALSE, warning=FALSE}
 # export regression result
-stargazer(model_em1_1, em1_lm.nnm1, em1_lm.exa1, em1_lm.cem1,  
+stargazer(model_em_b_1, em_b_lm.nnm1, em_b_lm.exa1, em_b_lm.cem1,
           type="text",
-          title="Regression results after matching em1",
+          title="Regression results after matching em_b",
           intercept.bottom = F,
           intercept.top = T,
           digits=4)
 ```
-```{r Generating em1 regression results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+```{r Generating em_b regression results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
 # export regression result
-stargazer(model_em1_1, em1_lm.nnm1, em1_lm.exa1, em1_lm.cem1, 
+stargazer(model_em_b_1, em_b_lm.nnm1, em_b_lm.exa1, em_b_lm.cem1,
           type="html",
-          title="Regression results after matching em1",
-          out="regression_results_after_matching_em1.doc",
+          title="Regression results after matching em_b",
+          out="regression_results_after_matching_em_b.doc",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+
+## Latino voters
+```{r em Counting Race Latino}
+count(em_cleaned, race)
+```
+
+`4`: Latino  
+
+### Regression estimate
+Creating a basic and preliminary estimate of the treatment effect.
+```{r em_l Experimental benchmark by regression,message=FALSE, warning=FALSE, paged.print=TRUE}
+em_l_cleaned <- em_cleaned %>%
+  filter(race == 4)
+
+model_em_l_1 <- lm(outcome ~ treated, data = em_l_cleaned)
+summary(model_em_l_1)
+```
+
+### Covariate balance
+```{r em_l Covariate balance ,message=FALSE, warning=FALSE, paged.print=TRUE}
+em_l_vars <- c("treated", "female","party", "congressionalDistrict", "historyCode2016", "general12", "age")
+em_l_covs1 <- na.omit(em_l_cleaned[,em_l_vars])
+bal.tab(em_l_covs1, treat = em_l_covs1$treated)
+```
+
+### Nearest neighbour matching
+```{r em_l Matching preparation, message=FALSE, warning=FALSE, include=FALSE}
+em_l_cem1_var <- c("treated", 
+                   "female", 
+                   "party", 
+                   "congressionalDistrict", 
+                   "historyCode2016", 
+                   "general12",
+                   "age", 
+                   "outcome")
+em_l_data1 <- na.omit(em_l_cleaned[,em_l_cem1_var])
+
+em_l_X_1 <- em_l_data1 %>%
+  dplyr::select(treated, female, party, congressionalDistrict,    historyCode2016, general12)
+```
+```{r em_l NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_l_m.out.nnm <- matchit(treated ~ female +
+                          party+
+                          congressionalDistrict+
+                          historyCode2016+
+                          general12 + 
+                          age, 
+                        data = em_l_data1, 
+                        replace = TRUE, 
+                        method = "nearest")
+em_l_bal_tab_nnm <- bal.tab(em_l_m.out.nnm, thresholds = c(m = 0.01), un = TRUE, binary = "std")
+em_l_bal_tab_nnm
+```
+
+```{r em_l Love plot after NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_l_lp.nnm <- love.plot(
+  em_l_m.out.nnm,
+  threshold = .01,
+  binary = 'std',
+  treat = em_l_data1$treated,
+  covs = em_l_X_1)
+
+em_l_lp.nnm
+```
+
+#### ATT estimate by nearest neighbor matching
+```{r em_l Reproducing the dataset after NNM, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+em_l_m.data.nnm <- match.data(em_l_m.out.nnm)
+head(em_l_m.data.nnm)
+```
+```{r em_l Basic regression after NNM, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_l_lm.nnm1 <- lm(outcome ~ treated, data = em_l_m.data.nnm)
+summary(em_l_lm.nnm1)
+```
+
+### Exact matching
+```{r em_l EXA, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_l_m.out.exa <- matchit(treated ~ female+
+                          party+
+                          congressionalDistrict+
+                          historyCode2016+
+                          general12 + 
+                          age, 
+                        data = em_l_data1, 
+                        method = "exact")
+em_l_bal_tab_exa <- bal.tab(em_l_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
+em_l_bal_tab_exa
+```
+```{r em_l Love plot after EXA, echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_l_lp.exa <- love.plot(
+  em_l_m.out.exa,
+  threshold = .01,
+  binary = 'std',
+  treat = em_l_data1$treated,
+  covs = em_l_X_1)
+
+em_l_lp.exa
+```
+
+From the covariate balance table and loveplot, we can see that all of the adjusted difference are reduced to 0, it is because the unmatched units are all dropped.
+
+#### ATT estimate by exact matching
+```{r em_l Reproducing the dataset after EXA, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+em_l_m.data.exa <- match.data(em_l_m.out.exa)
+head(em_l_m.data.exa)
+```
+```{r em_l Basic regression after EXA, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_l_lm.exa1 <- lm(outcome ~ treated, data = em_l_m.data.exa)
+summary(em_l_lm.exa1)
+```
+
+The estimate for the ATT after using exact matching is 0.0190735, which has a p-value of less than 2e^-16. 
+
+### Coarsened Exact Matching
+```{r em_l CEM, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_l_m.out.cem <- matchit(treated ~ female +
+                          party+
+                          congressionalDistrict+
+                          historyCode2016+
+                          general12 + 
+                          age,
+                     data = em_l_data1, method = "cem")
+
+em_l_bal_tab_cem <- bal.tab(em_l_m.out.cem, thresholds = c(m = 0.01), un = TRUE)
+em_l_bal_tab_cem
+```
+```{r em_l Love plot after CEM, echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_l_lp.cem <- love.plot(
+  em_l_m.out.cem,
+  threshold = .01,
+  binary = 'std',
+  treat = em_l_data1$treated,
+  covs = em_l_X_1)
+
+em_l_lp.cem
+```
+
+From the covariate balance table, we can see that most of the adjusted difference are reduced to 0, with the only exception of age, which is a continuous variable and may have a higher difficulty of being perfectly matched with too many possible discrete values.
+
+From the loveplot, we can observe that all of the adjusted differences is smaller than the unadjusted difference.
+#### ATT by coarsened exact matching
+```{r em_l Reproducing the dataset after CEM, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
+em_l_m.data.cem <- match.data(em_l_m.out.cem)
+head(em_l_m.data.cem)
+```
+```{r em_l Basic regression after CEM, message=FALSE, warning=FALSE, paged.print=TRUE}
+em_l_lm.cem1 <- lm(outcome ~ treated, data = em_l_m.data.cem)
+summary(em_l_lm.cem1)
+```
+
+The estimate for the ATT after using coarsened exact matching is 0.0213522, which has a p-value of less than 2e^-16. 
+
+### Comparing the ATT results from different matching
+```{r Generating em_l regression results after matching, message=FALSE, warning=FALSE}
+# export regression result
+stargazer(model_em_l_1, em_l_lm.nnm1, em_l_lm.exa1, em_l_lm.cem1,
+          type="text",
+          title="Regression results after matching em_l",
+          intercept.bottom = F,
+          intercept.top = T,
+          digits=4)
+```
+```{r Generating em_l regression results after matching .doc, message=FALSE, warning=FALSE, include=FALSE}
+# export regression result
+stargazer(model_em_l_1, em_l_lm.nnm1, em_l_lm.exa1, em_l_lm.cem1,
+          type="html",
+          title="Regression results after matching em_l",
+          out="regression_results_after_matching_em_l.doc",
           intercept.bottom = F,
           intercept.top = T,
           digits=4)
@@ -509,9 +644,7 @@ delim = ";", escape_double = FALSE, trim_ws = TRUE) %>% # need to change the fol
 #glimpse
 head(vaccine_incentives)
 ```
-
 ## Experimental groups by treatment
-
 ```{r vi Counting experimental groups by treatment}
 count(vaccine_incentives, Treatment)
 ```
@@ -522,7 +655,6 @@ count(vaccine_incentives, Treatment2)
 Control: treatment1(CDC Health Information)  
 Treatment version 1: treatment2(Lottery Incentive)  
 Treatment version 2: treatment3(Cash Voucher Incentive)  
-
 ```{r vi Data cleaning, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
 vi_cleaned <- vaccine_incentives %>%
   mutate(
@@ -554,9 +686,7 @@ vi_cleaned <- vaccine_incentives %>%
 
 head(vi_cleaned)
 ```
-
 ## Summary statistics of whole dataset
-
 ```{r vi Summary statistics of whole dataset}
 vi_cleaned %>%
   mutate(
@@ -567,20 +697,15 @@ vi_cleaned %>%
 ```
 
 ## Control vs Treatment 1 & 2 (vi)
-
 ### Regression estimate
-
 Creating a basic and preliminary estimate of the treatment effect.
-
 ```{r vi Experimental benchmark basic regression}
 model_vi_1 <- lm(outcome ~ treated, data = vi_cleaned)
 summary(model_vi_1)
 ```
 
 ### Control Regression
-
-Try adding other covariates into the regression and see
-
+Try adding other covariates into the regression and see.
 ```{r vi Experimental benchmark regression with control}
 model_vi_2 <- lm(outcome ~ treated +
                    gender + 
@@ -612,7 +737,7 @@ vi_covs1 <- vi_cleaned %>%
 bal.tab(vi_covs1, treat = vi_covs1$treated)
 ```
 
-```{r vi matching covariates,message=FALSE, warning=FALSE, include=FALSE}
+```{r vi Matching covariates, message=FALSE, warning=FALSE, include=FALSE}
 vi_data1 <- na.omit(vi_cleaned)
 
 vi_X_1 <- vi_data1 %>%
@@ -638,7 +763,7 @@ vi_m.out.nnm <- matchit(treated ~ gender +
                 data = vi_data1, 
                 replace = TRUE, 
                 method = "nearest")
-vi_bal_tab_nnm <- bal.tab(vi_m.out.nnm, thresholds = c(m = 0.01), un = TRUE)
+vi_bal_tab_nnm <- bal.tab(vi_m.out.nnm, thresholds = c(m = 0.01), un = TRUE, binary = "std")
 vi_bal_tab_nnm
 ```
 ```{r vi Love plot after NNM}
@@ -652,20 +777,18 @@ vi_lp.nnm <- love.plot(
 vi_lp.nnm
 ```
 
-#### ATT by NNM
-```{r vi Reproducing the dataset after NNM}
+#### ATT estimate by nearest neighbor matching
+```{r vi Reproducing the dataset after NNM, include=FALSE}
 vi_m.data.nnm <- match.data(vi_m.out.nnm)
 head(vi_m.data.nnm)
 ```
-
-#### NNM regression 
 ```{r vi Basic regression after NNM}
 vi_lm.nnm1 <- lm(outcome ~ treated, data = vi_m.data.nnm)
 summary(vi_lm.nnm1)
 ```
 
 ### Exact matching
-```{r vi exact matching, message=FALSE, warning=FALSE}
+```{r vi EXA, message=FALSE, warning=FALSE}
 vi_m.out.exa <- matchit(treated ~ gender +
                 race +
                 education +
@@ -679,7 +802,7 @@ vi_bal_tab_exa <- bal.tab(vi_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
 vi_bal_tab_exa
 ```
 
-```{r vi Love plot of exact matching}
+```{r vi Love plot of EXA}
 vi_lp.exa <- love.plot(
   vi_m.out.exa,
   threshold = .01,
@@ -690,20 +813,17 @@ vi_lp.exa <- love.plot(
 vi_lp.exa
 ```
 
-#### ATT by exact
-```{r vi Reproducing the dataset after exact}
+#### ATT estimate by exact matchin
+```{r vi Reproducing the dataset after EXA, include=FALSE}
 vi_m.data.exa <- match.data(vi_m.out.exa)
 head(vi_m.data.exa)
 ```
-
-#### exact regression 
 ```{r vi Basic regression after exact}
 vi_lm.exa1 <- lm(outcome ~ treated, data = vi_m.data.exa)
 summary(vi_lm.exa1)
 ```
 
 ### Coarsened Exact Matching
-
 ```{r vi CEM}
 vi_m.out.cem <- matchit(treated ~ gender +
                 race +
@@ -711,8 +831,7 @@ vi_m.out.cem <- matchit(treated ~ gender +
                 pool +
                 Trumphi +
                 age +
-                state +
-                duration,
+                state,
                 data = vi_data1,
                 method = "cem")
 
@@ -721,6 +840,7 @@ vi_bal_tab_cem <- bal.tab(vi_m.out.cem,
                        un = TRUE)
 vi_bal_tab_cem
 ```
+
 ```{r vi Love plot after CEM}
 vi_lp.cem <- love.plot(
   vi_m.out.cem,
@@ -732,13 +852,11 @@ vi_lp.cem <- love.plot(
 vi_lp.cem
 ```
 
-#### ATT by CEM
-```{r vi Reproducing the dataset after CEM}
+#### ATT estimate by coarsened exact matching
+```{r vi Reproducing the dataset after CEM, include=FALSE}
 vi_m.data.cem <- match.data(vi_m.out.cem)
 head(vi_m.data.cem)
 ```
-
-#### CEM regression 
 ```{r vi Basic regression after CEM}
 vi_lm.cem1 <- lm(outcome ~ treated, data = vi_m.data.cem)
 summary(vi_lm.cem1)
@@ -764,23 +882,21 @@ stargazer(model_vi_1, vi_lm.nnm1, vi_lm.exa1, vi_lm.cem1,
           intercept.top = T,
           digits=4)
 ```
-
 ## Control vs Treatment 1 only (vi1)  
-
-### Experimental benchmark  
-
+### Regression estimate
 Creating a basic and preliminary estimate of the treatment effect.
-
-```{r vi Creating a subset of control and treatment 1 only}
+```{r vi1 Creating a subset of control and treatment 1 only}
 vi1_cleaned <- vi_cleaned %>%
   filter(Treatment_012 != 2)
 
 count(vi1_cleaned, Treatment_012)
 ```
+
 ```{r vi1 Experimental benchmark regression}
 model_vi1_1 <- lm(outcome ~ treated, data = vi1_cleaned)
 summary(model_vi1_1)
 ```
+
 Try adding other covariates into the regression and see
 ```{r vi1 Experimental benchmark regression with control}
 model_vi1_2 <- lm(outcome ~ treated +
@@ -811,7 +927,8 @@ vi1_covs1 <- vi1_cleaned %>%
 
 bal.tab(vi1_covs1, treat = vi1_covs1$treated)
 ```
-```{r vi1 matching covariates,message=FALSE, warning=FALSE, include=FALSE}
+
+```{r vi1 Matching covariates,message=FALSE, warning=FALSE, include=FALSE}
 vi1_data1 <- na.omit(vi1_cleaned)
 
 vi1_X_1 <- vi1_data1 %>%
@@ -836,7 +953,7 @@ vi1_m.out.nnm <- matchit(treated ~ gender +
                 data = vi1_data1, 
                 replace = TRUE, 
                 method = "nearest")
-vi1_bal_tab_nnm <- bal.tab(vi1_m.out.nnm, thresholds = c(m = 0.01), un = TRUE)
+vi1_bal_tab_nnm <- bal.tab(vi1_m.out.nnm, thresholds = c(m = 0.01), un = TRUE, binary = "std")
 vi1_bal_tab_nnm
 ```
 ```{r vi1 Love plot after NNM}
@@ -850,20 +967,18 @@ vi1_lp.nnm <- love.plot(
 vi1_lp.nnm
 ```
 
-#### ATT by NNM
-```{r vi1 Reproducing the dataset after NNM}
+#### ATT estimate by nearest neighbor matching
+```{r vi1 Reproducing the dataset after NNM, include=FALSE}
 vi1_m.data.nnm <- match.data(vi1_m.out.nnm)
 head(vi1_m.data.nnm)
 ```
-
-#### NNM regression 
 ```{r vi1 Basic regression after NNM}
 vi1_lm.nnm1 <- lm(outcome ~ treated, data = vi1_m.data.nnm)
 summary(vi1_lm.nnm1)
 ```
 
 ### Exact matching
-```{r vi1 exact matching, message=FALSE, warning=FALSE}
+```{r vi1 EXA, message=FALSE, warning=FALSE}
 vi1_m.out.exa <- matchit(treated ~ gender +
                 race +
                 education +
@@ -877,7 +992,7 @@ vi1_bal_tab_exa <- bal.tab(vi1_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
 vi1_bal_tab_exa
 ```
 
-```{r vi1 Love plot of exact matching}
+```{r vi1 Love plot of EXA}
 vi1_lp.exa <- love.plot(
   vi1_m.out.exa,
   threshold = .01,
@@ -888,14 +1003,13 @@ vi1_lp.exa <- love.plot(
 vi1_lp.exa
 ```
 
-#### ATT by exact
-```{r vi1 Reproducing the dataset after exact}
+#### ATT estimate by exact matching
+```{r vi1 Reproducing the dataset after EXA, include=FALSE}
 vi1_m.data.exa <- match.data(vi1_m.out.exa)
 head(vi1_m.data.exa)
 ```
 
-#### exact regression 
-```{r vi1 Basic regression after exact}
+```{r vi1 Basic regression after EXA}
 vi1_lm.exa1 <- lm(outcome ~ treated, data = vi1_m.data.exa)
 summary(vi1_lm.exa1)
 ```
@@ -908,8 +1022,7 @@ vi1_m.out.cem <- matchit(treated ~ gender +
                 pool +
                 Trumphi +
                 age +
-                state +
-                duration,
+                state,
                 data = vi1_data1,
                 method = "cem")
 
@@ -918,6 +1031,7 @@ vi1_bal_tab_cem <- bal.tab(vi1_m.out.cem,
                        un = TRUE)
 vi1_bal_tab_cem
 ```
+
 ```{r vi1 Love plot after CEM}
 vi1_lp.cem <- love.plot(
   vi1_m.out.cem,
@@ -929,13 +1043,11 @@ vi1_lp.cem <- love.plot(
 vi1_lp.cem
 ```
 
-#### ATT by CEM
-```{r vi1 Reproducing the dataset after CEM}
+#### ATT estimate by coarsened exact matching
+```{r vi1 Reproducing the dataset after CEM, include=FALSE}
 vi1_m.data.cem <- match.data(vi1_m.out.cem)
 head(vi1_m.data.cem)
 ```
-
-#### CEM regression 
 ```{r vi1 Basic regression after CEM}
 vi1_lm.cem1 <- lm(outcome ~ treated, data = vi1_m.data.cem)
 summary(vi1_lm.cem1)
@@ -956,14 +1068,12 @@ stargazer(model_vi1_1, vi1_lm.nnm1, vi1_lm.exa1, vi1_lm.cem1,
 stargazer(model_vi1_1, vi1_lm.nnm1, vi1_lm.exa1, vi1_lm.cem1, 
           type="html",
           title="Regression results after matching vi1",
-          out="regression_results_after_matching_vi.doc",
+          out="regression_results_after_matching_vi1.doc",
           intercept.bottom = F,
           intercept.top = T,
           digits=4)
 ```
-
 ## Control vs Treatment 2 only (vi2)
-### Experimental benchmark  
 Creating a basic and preliminary estimate of the treatment effect.
 ```{r vi2 Creating a subset of control and treatment 2 only}
 vi2_cleaned <- vi_cleaned %>%
@@ -972,15 +1082,15 @@ vi2_cleaned <- vi_cleaned %>%
 count(vi2_cleaned, Treatment_012)
 ```
 
+### Regression estimate
+Creating a basic and preliminary estimate of the treatment effect.
 ```{r vi2 Experimental benchmark regression}
 model_vi2_1 <- lm(outcome ~ treated, data = vi2_cleaned)
 summary(model_vi2_1)
 ```
 
 ### Control Regression
-
-Try adding other covariates into the regression and see
-
+Try adding other covariates into the regression and see.
 ```{r vi2 Experimental benchmark regression with control}
 model_vi2_2 <- lm(outcome ~ treated +
                    gender + 
@@ -989,8 +1099,8 @@ model_vi2_2 <- lm(outcome ~ treated +
                    pool +
                    Trumppercent +
                    age +
-                   state
-                 , data = vi_cleaned)
+                   state,
+                  data = vi_cleaned)
 summary(model_vi2_2)
 ```
 
@@ -1011,7 +1121,7 @@ vi2_covs1 <- vi2_cleaned %>%
 
 bal.tab(vi2_covs1, treat = vi2_covs1$treated)
 ```
-```{r vi2 matching covariates,message=FALSE, warning=FALSE, include=FALSE}
+```{r vi2 matching covariates, message=FALSE, warning=FALSE, include=FALSE}
 vi2_data1 <- na.omit(vi2_cleaned)
 
 vi2_X_1 <- vi2_data1 %>%
@@ -1036,7 +1146,7 @@ vi2_m.out.nnm <- matchit(treated ~ gender +
                 data = vi2_data1, 
                 replace = TRUE, 
                 method = "nearest")
-vi2_bal_tab_nnm <- bal.tab(vi2_m.out.nnm, thresholds = c(m = 0.01), un = TRUE)
+vi2_bal_tab_nnm <- bal.tab(vi2_m.out.nnm, thresholds = c(m = 0.01), un = TRUE, binary = "std")
 vi2_bal_tab_nnm
 ```
 ```{r vi2 Love plot after NNM}
@@ -1050,20 +1160,18 @@ vi2_lp.nnm <- love.plot(
 vi2_lp.nnm
 ```
 
-#### ATT by NNM
-```{r vi2 Reproducing the dataset after NNM}
+#### ATT estimate by nearest neighbor matching
+```{r vi2 Reproducing the dataset after NNM, include=FALSE}
 vi2_m.data.nnm <- match.data(vi2_m.out.nnm)
 head(vi2_m.data.nnm)
 ```
-
-#### NNM regression 
 ```{r vi2 Basic regression after NNM}
 vi2_lm.nnm1 <- lm(outcome ~ treated, data = vi2_m.data.nnm)
 summary(vi2_lm.nnm1)
 ```
 
 ### Exact matching
-```{r vi2 exact matching, message=FALSE, warning=FALSE}
+```{r vi2 EXA, message=FALSE, warning=FALSE}
 vi2_m.out.exa <- matchit(treated ~ gender +
                 race +
                 education +
@@ -1077,7 +1185,7 @@ vi2_bal_tab_exa <- bal.tab(vi2_m.out.exa, thresholds = c(m = 0.01), un = TRUE)
 vi2_bal_tab_exa
 ```
 
-```{r vi2 Love plot of exact matching}
+```{r vi2 Love plot of EXA}
 vi2_lp.exa <- love.plot(
   vi2_m.out.exa,
   threshold = .01,
@@ -1088,14 +1196,12 @@ vi2_lp.exa <- love.plot(
 vi2_lp.exa
 ```
 
-#### ATT by exact
-```{r vi2 Reproducing the dataset after exact}
+#### ATT estimate by exact matching
+```{r vi2 Reproducing the dataset after EXA, include=FALSE}
 vi2_m.data.exa <- match.data(vi2_m.out.exa)
 head(vi2_m.data.exa)
 ```
-
-#### exact regression 
-```{r vi2 Basic regression after exact}
+```{r vi2 Basic regression after EXA}
 vi2_lm.exa1 <- lm(outcome ~ treated, data = vi2_m.data.exa)
 summary(vi2_lm.exa1)
 ```
@@ -1108,8 +1214,7 @@ vi2_m.out.cem <- matchit(treated ~ gender +
                 pool +
                 Trumphi +
                 age +
-                state +
-                duration,
+                state,
                 data = vi2_data1,
                 method = "cem")
 
@@ -1129,13 +1234,11 @@ vi2_lp.cem <- love.plot(
 vi2_lp.cem
 ```
 
-#### ATT by CEM
-```{r vi2 Reproducing the dataset after CEM}
+#### ATT estimate by coarsened exact matching
+```{r vi2 Reproducing the dataset after CEM, include=FALSE}
 vi2_m.data.cem <- match.data(vi2_m.out.cem)
 head(vi2_m.data.cem)
 ```
-
-#### CEM regression 
 ```{r vi2 Basic regression after CEM}
 vi2_lm.cem1 <- lm(outcome ~ treated, data = vi2_m.data.cem)
 summary(vi2_lm.cem1)
@@ -1156,20 +1259,9 @@ stargazer(model_vi2_1, vi2_lm.nnm1, vi2_lm.exa1, vi2_lm.cem1,
 stargazer(model_vi2_1, vi2_lm.nnm1, vi2_lm.exa1, vi2_lm.cem1, 
           type="html",
           title="Regression results after matching vi2",
-          out="regression_results_after_matching_vi.doc",
+          out="regression_results_after_matching_vi2.doc",
           intercept.bottom = F,
           intercept.top = T,
           digits=4)
 ```
-
-
-
-
-
-
-
-
-
-
-
 
